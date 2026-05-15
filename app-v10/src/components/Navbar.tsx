@@ -7,10 +7,10 @@ import { useActiveSection } from '@/hooks/useActiveSection';
 const navLinks = [
   { label: 'Home', href: '#home' },
   { label: 'Research Groups', href: '#research-groups' },
-  { label: 'News', href: '#news' },
   { label: 'Platforms', href: '#platforms' },
-  { label: 'GitHub', href: 'https://github.com/AGI-FBHC', external: true },
+  { label: 'News', href: '#news' },
   { label: 'Contact', href: '#about' },
+  { label: 'GitHub', href: 'https://github.com/AGI-FBHC', external: true },
 ];
 
 export default function Navbar() {

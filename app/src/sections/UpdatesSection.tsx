@@ -165,7 +165,7 @@ export default function UpdatesSection() {
         }
       } catch (err: any) {
         console.error('Failed to fetch articles:', err);
-        setError(err.message);
+        setError(err.message || 'Load failed');
         // Fallback: show empty state
         setArticles([]);
       } finally {
@@ -275,7 +275,22 @@ export default function UpdatesSection() {
         {error && !loading && (
           <div className="rounded-[14px] border border-red-500/20 bg-red-500/5 p-6 text-center">
             <p className="text-red-400">{isZh ? '加载失败' : 'Failed to load'}: {error}</p>
-            <p className={`mt-2 text-sm ${isDark ? 'text-[#8B8B9E]' : 'text-[#6B6B7B]'}`}>{isZh ? '请检查后端服务是否运行' : 'Please check if backend is running'}</p>
+            <p className={`mt-2 text-sm ${isDark ? 'text-[#8B8B9E]' : 'text-[#6B6B7B]'}`}>
+              {isZh ? '请检查网络连接，或点击重试' : 'Please check connection or tap to retry'}
+            </p>
+            <button
+              onClick={() => {
+                setError(null);
+                setLoading(true);
+                // 重新触发 useEffect
+                const current = activeCategory;
+                setActiveCategory('All');
+                setTimeout(() => setActiveCategory(current), 50);
+              }}
+              className="mt-4 rounded-lg bg-[#06B6D4]/10 px-4 py-2 text-sm text-[#06B6D4] transition-colors hover:bg-[#06B6D4]/20"
+            >
+              {isZh ? '重试' : 'Retry'}
+            </button>
           </div>
         )}
 

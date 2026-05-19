@@ -190,38 +190,49 @@ function inferCategory(repo) {
 function buildContent(repo, readmeSummary) {
   const parts = [];
 
-  parts.push(`# ${repo.name}`);
-  parts.push('');
-
-  if (repo.description) {
-    parts.push(repo.description);
-    parts.push('');
-  }
-
+  // 如果有 README 摘要，优先展示；否则只展示 description
   if (readmeSummary) {
-    parts.push('## About');
     parts.push(readmeSummary);
-    parts.push('');
+  } else if (repo.description) {
+    parts.push(repo.description);
   }
 
-  parts.push('## Repository Info');
-  parts.push(`- **Language:** ${repo.language}`);
-  parts.push(`- **Stars:** ${repo.stars}`);
-  parts.push(`- **Forks:** ${repo.forks}`);
-  if (repo.topics.length) {
-    parts.push(`- **Topics:** ${repo.topics.join(', ')}`);
+  // 只有仓库有实际价值信息（stars/topics 等）时才展示 Repository Info
+  const hasValue = repo.stars > 0 || repo.forks > 0 || repo.topics.length > 0;
+  if (hasValue) {
+    parts.push('');
+    parts.push('---');
+    parts.push('');
+    if (repo.language && repo.language !== 'Unknown') {
+      parts.push(`- **Language:** ${repo.language}`);
+    }
+    if (repo.stars > 0) {
+      parts.push(`- **Stars:** ${repo.stars}`);
+    }
+    if (repo.forks > 0) {
+      parts.push(`- **Forks:** ${repo.forks}`);
+    }
+    if (repo.topics.length) {
+      parts.push(`- **Topics:** ${repo.topics.join(', ')}`);
+    }
   }
-  parts.push(`- **Updated:** ${repo.updatedAt.split('T')[0]}`);
+
   parts.push('');
-  parts.push(`[View on GitHub](${repo.url})`);
+  parts.push(`[View on GitHub →](${repo.url})`);
 
   return parts.join('\n');
 }
 
 /**
  * Convert a repo to article format
+ * Skip repos that have neither description nor README.
  */
 function repoToArticle(repo, readmeSummary) {
+  // Skip repos with no valuable content
+  if (!repo.description && !readmeSummary) {
+    return null;
+  }
+
   const category = inferCategory(repo);
 
   // Use description as excerpt, fallback to README summary
@@ -275,7 +286,11 @@ async function scrapeReposAsArticles(options = {}) {
     }
 
     const article = repoToArticle(repo, readmeSummary);
-    articles.push(article);
+    if (article) {
+      articles.push(article);
+    } else {
+      console.log(`[GitHub] ⚠ Skipped ${repo.name} — no description or README`);
+    }
   }
 
   console.log(`[GitHub] ✓ Converted ${articles.length} repos to articles`);

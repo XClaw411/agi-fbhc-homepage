@@ -9,16 +9,6 @@ export default function Home() {
     <>
       <HeroSection />
 
-      {/* ====== Section Transitions ====== */}
-
-      {/* Hero → ResearchGroups: Hero ends at #050508, ResearchGroups starts with its own gradient */}
-      <div
-        className="relative h-24 w-full"
-        style={{
-          background: 'linear-gradient(180deg, #050508 0%, #080810 100%)',
-        }}
-      />
-
       <ResearchGroups />
 
       {/* ResearchGroups → Platforms */}

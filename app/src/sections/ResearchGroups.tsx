@@ -99,8 +99,7 @@ export default function ResearchGroups() {
       id="research-groups"
       className="relative py-16 lg:py-24"
       style={{
-        background:
-          'linear-gradient(180deg, rgba(12,12,26,0.5) 0%, #050508 15%)',
+        background: 'linear-gradient(180deg, #050508 0%, #080810 20%, #0A0A12 100%)',
       }}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

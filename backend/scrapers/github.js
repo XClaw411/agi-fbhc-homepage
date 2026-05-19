@@ -124,7 +124,8 @@ async function fetchReadmeSummary(fullName) {
 }
 
 /**
- * Extract a clean text summary from README markdown
+ * Extract clean text from README markdown.
+ * Returns the full cleaned content (not just first paragraph).
  */
 function extractSummary(markdown) {
   if (!markdown) return null;
@@ -132,38 +133,29 @@ function extractSummary(markdown) {
   // Remove HTML tags
   let text = markdown.replace(/<[^>]+>/g, '');
 
-  // Remove markdown images/links: ![alt](url)  [text](url)
+  // Remove markdown images: ![alt](url)
   text = text.replace(/!\[[^\]]*\]\([^)]*\)/g, '');
+
+  // Keep links as plain text: [text](url) → text
   text = text.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
 
-  // Remove code blocks
+  // Remove code blocks entirely
   text = text.replace(/```[\s\S]*?```/g, '');
   text = text.replace(/`[^`]+`/g, '');
-
-  // Remove markdown headers
-  text = text.replace(/^#{1,6}\s+/gm, '');
 
   // Remove horizontal rules
   text = text.replace(/^[\-*_]{3,}\s*$/gm, '');
 
-  // Split into lines and find first meaningful paragraph
-  const lines = text.split('\n');
-  for (const line of lines) {
-    const trimmed = line.trim();
-    // Skip empty, too short, or table rows
-    if (!trimmed || trimmed.length < 15) continue;
-    if (/^\|/.test(trimmed)) continue;
-    if (/^\s*[-*]\s/.test(trimmed) && trimmed.length < 40) continue; // skip short list items
-    return trimmed;
-  }
+  // Clean up excessive blank lines
+  text = text.replace(/\n{3,}/g, '\n\n');
 
-  // Fallback: return first non-empty line
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (trimmed && trimmed.length > 10) return trimmed;
-  }
+  // Trim
+  text = text.trim();
 
-  return null;
+  // If after cleaning there's little left, return null
+  if (text.length < 20) return null;
+
+  return text;
 }
 
 /**

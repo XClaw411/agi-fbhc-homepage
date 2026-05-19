@@ -42,7 +42,7 @@ export default function Footer() {
           <motion.div variants={itemVariants}>
             <div className="flex items-center gap-2.5">
               <div className="flex items-center justify-center rounded-xl bg-white/90 p-1">
-                <img src="./logo.png" alt="AGI&FBHC" className="h-5 w-5 object-contain" />
+                <img src="/logo.png" alt="AGI&FBHC" className="h-5 w-5 object-contain" />
               </div>
               <span className="text-sm font-semibold tracking-wide text-[#F0F0F5]">
                 AGI&FBHC

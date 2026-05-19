@@ -11,14 +11,6 @@ export default function Home() {
 
       <ResearchGroups />
 
-      {/* ResearchGroups → Platforms */}
-      <div
-        className="relative h-24 w-full"
-        style={{
-          background: 'linear-gradient(180deg, #050508 0%, #080810 100%)',
-        }}
-      />
-
       <PlatformsSection />
 
       {/* Platforms → Updates */}

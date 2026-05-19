@@ -1,7 +1,9 @@
 /**
- * GitHub Organization Scraper
- * Fetches public data from AGI-FBHC GitHub organization
- * Uses GitHub REST API (no auth needed for public data, auth increases rate limits)
+ * GitHub Organization Scraper — Repository-centric
+ * Fetches repos from AGI-FBHC org, reads README for summary,
+ * and converts each repo into an article entry.
+ *
+ * No more commit/event noise — each article = one repository.
  */
 
 const axios = require('axios');
@@ -9,20 +11,25 @@ const axios = require('axios');
 const ORG_NAME = 'AGI-FBHC';
 const API_BASE = 'https://api.github.com';
 
-// Topic to category mapping
+// Topic → category mapping
 const TOPIC_CATEGORIES = {
   'llm': 'LLM & Agents',
+  'agent': 'LLM & Agents',
   'agents': 'LLM & Agents',
   'multi-agent': 'LLM & Agents',
+  'bot': 'LLM & Agents',
+  'chat': 'LLM & Agents',
   'biology': 'AI for Biology',
   'bioinformatics': 'AI for Biology',
   'protein': 'AI for Biology',
+  'gene': 'AI for Biology',
+  'ppi': 'AI for Biology',
+  'drug': 'AI for Health',
   'health': 'AI for Health',
   'medical': 'AI for Health',
   'clinical': 'AI for Health',
 };
 
-// GitHub API headers
 function getHeaders() {
   const headers = {
     'Accept': 'application/vnd.github.v3+json',
@@ -35,7 +42,252 @@ function getHeaders() {
 }
 
 /**
- * Fetch organization profile
+ * Fetch all repos for the organization (handles pagination)
+ */
+async function fetchAllRepos() {
+  const repos = [];
+  let page = 1;
+  const perPage = 100;
+
+  while (true) {
+    console.log(`[GitHub] Fetching repos page ${page}...`);
+    const response = await axios.get(
+      `${API_BASE}/orgs/${ORG_NAME}/repos`,
+      {
+        headers: getHeaders(),
+        params: {
+          sort: 'updated',
+          direction: 'desc',
+          per_page: perPage,
+          page,
+        },
+        timeout: 30000,
+      }
+    );
+
+    const data = response.data;
+    if (!data.length) break;
+
+    repos.push(...data.map(repo => ({
+      id: repo.id,
+      name: repo.name,
+      fullName: repo.full_name,
+      description: repo.description || '',
+      url: repo.html_url,
+      stars: repo.stargazers_count,
+      forks: repo.forks_count,
+      language: repo.language || 'Unknown',
+      topics: repo.topics || [],
+      createdAt: repo.created_at,
+      updatedAt: repo.updated_at,
+      pushedAt: repo.pushed_at,
+      isPrivate: repo.private,
+      isFork: repo.fork,
+    })));
+
+    if (data.length < perPage) break;
+    page++;
+  }
+
+  console.log(`[GitHub] ✓ Fetched ${repos.length} repos`);
+  return repos;
+}
+
+/**
+ * Fetch README content for a repo and extract plain-text summary
+ */
+async function fetchReadmeSummary(fullName) {
+  try {
+    const response = await axios.get(
+      `${API_BASE}/repos/${fullName}/readme`,
+      {
+        headers: getHeaders(),
+        timeout: 15000,
+      }
+    );
+
+    const data = response.data;
+    if (!data.content) return null;
+
+    // Decode base64
+    const content = Buffer.from(data.content, 'base64').toString('utf-8');
+    return extractSummary(content);
+
+  } catch (err) {
+    if (err.response?.status === 404) {
+      console.log(`[GitHub] No README for ${fullName}`);
+    } else {
+      console.error(`[GitHub] Failed to fetch README for ${fullName}:`, err.message);
+    }
+    return null;
+  }
+}
+
+/**
+ * Extract a clean text summary from README markdown
+ */
+function extractSummary(markdown) {
+  if (!markdown) return null;
+
+  // Remove HTML tags
+  let text = markdown.replace(/<[^>]+>/g, '');
+
+  // Remove markdown images/links: ![alt](url)  [text](url)
+  text = text.replace(/!\[[^\]]*\]\([^)]*\)/g, '');
+  text = text.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
+
+  // Remove code blocks
+  text = text.replace(/```[\s\S]*?```/g, '');
+  text = text.replace(/`[^`]+`/g, '');
+
+  // Remove markdown headers
+  text = text.replace(/^#{1,6}\s+/gm, '');
+
+  // Remove horizontal rules
+  text = text.replace(/^[\-*_]{3,}\s*$/gm, '');
+
+  // Split into lines and find first meaningful paragraph
+  const lines = text.split('\n');
+  for (const line of lines) {
+    const trimmed = line.trim();
+    // Skip empty, too short, or table rows
+    if (!trimmed || trimmed.length < 15) continue;
+    if (/^\|/.test(trimmed)) continue;
+    if (/^\s*[-*]\s/.test(trimmed) && trimmed.length < 40) continue; // skip short list items
+    return trimmed;
+  }
+
+  // Fallback: return first non-empty line
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed && trimmed.length > 10) return trimmed;
+  }
+
+  return null;
+}
+
+/**
+ * Infer article category from repo name, description, and topics
+ */
+function inferCategory(repo) {
+  const text = (repo.name + ' ' + repo.description + ' ' + repo.topics.join(' ')).toLowerCase();
+
+  for (const [topic, category] of Object.entries(TOPIC_CATEGORIES)) {
+    if (text.includes(topic)) return category;
+  }
+
+  // Heuristic fallback
+  if (/\b(llm|agent|bot|chat|gpt|claude|rag)\b/.test(text)) return 'LLM & Agents';
+  if (/\b(bio|protein|gene|ppi|dgraph|mappis|ipnet|causal3d)\b/.test(text)) return 'AI for Biology';
+  if (/\b(health|medical|clinical|drug|patient)\b/.test(text)) return 'AI for Health';
+
+  return 'Group News';
+}
+
+/**
+ * Build a rich content body from repo metadata + README summary
+ */
+function buildContent(repo, readmeSummary) {
+  const parts = [];
+
+  parts.push(`# ${repo.name}`);
+  parts.push('');
+
+  if (repo.description) {
+    parts.push(repo.description);
+    parts.push('');
+  }
+
+  if (readmeSummary) {
+    parts.push('## About');
+    parts.push(readmeSummary);
+    parts.push('');
+  }
+
+  parts.push('## Repository Info');
+  parts.push(`- **Language:** ${repo.language}`);
+  parts.push(`- **Stars:** ${repo.stars}`);
+  parts.push(`- **Forks:** ${repo.forks}`);
+  if (repo.topics.length) {
+    parts.push(`- **Topics:** ${repo.topics.join(', ')}`);
+  }
+  parts.push(`- **Updated:** ${repo.updatedAt.split('T')[0]}`);
+  parts.push('');
+  parts.push(`[View on GitHub](${repo.url})`);
+
+  return parts.join('\n');
+}
+
+/**
+ * Convert a repo to article format
+ */
+function repoToArticle(repo, readmeSummary) {
+  const category = inferCategory(repo);
+
+  // Use description as excerpt, fallback to README summary
+  let excerpt = repo.description || readmeSummary || '';
+  if (excerpt.length > 300) excerpt = excerpt.slice(0, 297) + '...';
+
+  const title = repo.description
+    ? `${repo.name}: ${repo.description}`
+    : repo.name;
+
+  return {
+    id: `github_repo_${repo.name}`,
+    title: title.length > 200 ? title.slice(0, 197) + '...' : title,
+    excerpt,
+    content: buildContent(repo, readmeSummary),
+    contentEn: buildContent(repo, readmeSummary), // Same for now
+    category,
+    source: 'GitHub',
+    author: ORG_NAME,
+    date: repo.pushedAt ? repo.pushedAt.split('T')[0] : repo.updatedAt.split('T')[0],
+    url: repo.url,
+    coverImage: '',
+    tags: ['GitHub', category.split(' ')[0], ...(repo.topics.slice(0, 3))],
+    scrapedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Scrape all repos and return as articles
+ * @param {Object} options
+ * @param {boolean} options.readReadme - Whether to fetch README for each repo (slower but richer)
+ * @param {number} options.maxRepos - Max repos to process (null = all)
+ */
+async function scrapeReposAsArticles(options = {}) {
+  const { readReadme = true, maxRepos = null } = options;
+
+  const repos = await fetchAllRepos();
+  const toProcess = maxRepos ? repos.slice(0, maxRepos) : repos;
+
+  const articles = [];
+
+  for (let i = 0; i < toProcess.length; i++) {
+    const repo = toProcess[i];
+    console.log(`[GitHub] [${i + 1}/${toProcess.length}] Processing ${repo.name}...`);
+
+    let readmeSummary = null;
+    if (readReadme) {
+      readmeSummary = await fetchReadmeSummary(repo.fullName);
+      // Small delay to avoid rate limits
+      if (i < toProcess.length - 1) await sleep(500);
+    }
+
+    const article = repoToArticle(repo, readmeSummary);
+    articles.push(article);
+  }
+
+  console.log(`[GitHub] ✓ Converted ${articles.length} repos to articles`);
+  return articles;
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Full organization data (for other uses)
  */
 async function fetchOrgProfile() {
   try {
@@ -50,88 +302,6 @@ async function fetchOrgProfile() {
   }
 }
 
-/**
- * Fetch organization repositories
- */
-async function scrapeRepos() {
-  try {
-    console.log(`[GitHub] Fetching repos for ${ORG_NAME}...`);
-
-    const response = await axios.get(
-      `${API_BASE}/orgs/${ORG_NAME}/repos`,
-      {
-        headers: getHeaders(),
-        params: {
-          sort: 'updated',
-          direction: 'desc',
-          per_page: 50,
-        },
-        timeout: 15000,
-      }
-    );
-
-    const repos = response.data.map(repo => ({
-      id: repo.id,
-      name: repo.name,
-      fullName: repo.full_name,
-      description: repo.description || '',
-      url: repo.html_url,
-      stars: repo.stargazers_count,
-      forks: repo.forks_count,
-      language: repo.language || 'Unknown',
-      topics: repo.topics || [],
-      createdAt: repo.created_at,
-      updatedAt: repo.updated_at,
-      isPrivate: repo.private,
-      isFork: repo.fork,
-    }));
-
-    console.log(`[GitHub] ✓ Fetched ${repos.length} repos`);
-    return repos;
-
-  } catch (err) {
-    console.error('[GitHub] Failed to fetch repos:', err.message);
-    return [];
-  }
-}
-
-/**
- * Fetch recent organization events
- */
-async function scrapeEvents() {
-  try {
-    console.log(`[GitHub] Fetching events for ${ORG_NAME}...`);
-
-    const response = await axios.get(
-      `${API_BASE}/orgs/${ORG_NAME}/events`,
-      {
-        headers: getHeaders(),
-        params: { per_page: 30 },
-        timeout: 15000,
-      }
-    );
-
-    const events = response.data.map(event => ({
-      id: event.id,
-      type: event.type,
-      actor: event.actor?.login || 'unknown',
-      repo: event.repo?.name || '',
-      createdAt: event.created_at,
-      payload: event.payload,
-    }));
-
-    console.log(`[GitHub] ✓ Fetched ${events.length} events`);
-    return events;
-
-  } catch (err) {
-    console.error('[GitHub] Failed to fetch events:', err.message);
-    return [];
-  }
-}
-
-/**
- * Fetch organization members
- */
 async function fetchMembers() {
   try {
     const response = await axios.get(
@@ -142,13 +312,11 @@ async function fetchMembers() {
         timeout: 15000,
       }
     );
-
-    return response.data.map(member => ({
-      username: member.login,
-      avatar: member.avatar_url,
-      profileUrl: member.html_url,
+    return response.data.map(m => ({
+      username: m.login,
+      avatar: m.avatar_url,
+      profileUrl: m.html_url,
     }));
-
   } catch (err) {
     console.error('[GitHub] Failed to fetch members:', err.message);
     return [];
@@ -156,104 +324,32 @@ async function fetchMembers() {
 }
 
 /**
- * Convert GitHub events to article format for display
+ * Legacy: convert events to articles (kept for compatibility, but NOT recommended)
+ * @deprecated Use scrapeReposAsArticles instead
  */
+async function scrapeEvents() {
+  console.warn('[GitHub] scrapeEvents() is deprecated. Use scrapeReposAsArticles() instead.');
+  return [];
+}
+
 function convertEventsToArticles(events) {
-  const articles = [];
-  const seenRepos = new Set();
-
-  for (const event of events) {
-    // Only process PushEvent and CreateEvent for new content
-    if (event.type !== 'PushEvent' && event.type !== 'CreateEvent') continue;
-
-    const repoName = event.repo.replace(`${ORG_NAME}/`, '');
-    if (seenRepos.has(repoName)) continue;
-    seenRepos.add(repoName);
-
-    // Determine category from repo name/topics
-    const category = inferCategory(repoName, event.payload?.description || '');
-
-    const article = {
-      id: `github_${event.id}`,
-      title: `[GitHub] ${repoName} - ${getEventDescription(event)}`,
-      excerpt: `Repository update: ${repoName}. ${event.type === 'PushEvent' ? 'New commits pushed' : 'New content created'} by ${event.actor}.`,
-      content: `GitHub repository activity for ${event.repo}:\n\nEvent: ${event.type}\nActor: ${event.actor}\nTime: ${event.createdAt}\n\nThis repository contains research code and artifacts from the AGI&FBHC lab.`,
-      contentEn: `GitHub repository activity for ${event.repo}:\n\nEvent: ${event.type}\nActor: ${event.actor}\nTime: ${event.createdAt}\n\nThis repository contains research code and artifacts from the AGI&FBHC lab.`,
-      category,
-      source: 'GitHub',
-      author: event.actor,
-      date: event.createdAt.split('T')[0],
-      url: `https://github.com/${event.repo}`,
-      coverImage: '',
-      tags: ['GitHub', category.split(' ')[0]],
-      scrapedAt: new Date().toISOString(),
-    };
-
-    articles.push(article);
-  }
-
-  return articles;
-}
-
-/**
- * Infer article category from repo name/description
- */
-function inferCategory(repoName, description = '') {
-  const text = (repoName + ' ' + description).toLowerCase();
-
-  if (text.includes('llm') || text.includes('agent') || text.includes('bot') || text.includes('chat')) {
-    return 'LLM & Agents';
-  }
-  if (text.includes('bio') || text.includes('protein') || text.includes('gene') || text.includes('medical')) {
-    return 'AI for Biology';
-  }
-  if (text.includes('health') || text.includes('clinical') || text.includes('drug')) {
-    return 'AI for Health';
-  }
-  return 'Group News';
-}
-
-/**
- * Get human-readable event description
- */
-function getEventDescription(event) {
-  switch (event.type) {
-    case 'PushEvent':
-      return `${event.payload?.commits?.length || 0} commits pushed`;
-    case 'CreateEvent':
-      return `New ${event.payload?.ref_type || 'content'} created`;
-    case 'ReleaseEvent':
-      return `Release ${event.payload?.release?.tag_name || ''}`;
-    default:
-      return event.type;
-  }
-}
-
-/**
- * Full organization data aggregation
- */
-async function fetchAllData() {
-  const [profile, repos, events, members] = await Promise.all([
-    fetchOrgProfile(),
-    scrapeRepos(),
-    scrapeEvents(),
-    fetchMembers(),
-  ]);
-
-  return {
-    profile,
-    repos,
-    events,
-    members,
-    lastUpdated: new Date().toISOString(),
-  };
+  console.warn('[GitHub] convertEventsToArticles() is deprecated.');
+  return [];
 }
 
 module.exports = {
+  // New repo-centric API
+  fetchAllRepos,
+  fetchReadmeSummary,
+  extractSummary,
+  inferCategory,
+  repoToArticle,
+  scrapeReposAsArticles,
+
+  // Legacy / other
   fetchOrgProfile,
-  scrapeRepos,
-  scrapeEvents,
   fetchMembers,
-  fetchAllData,
+  scrapeEvents,
   convertEventsToArticles,
+  ORG_NAME,
 };

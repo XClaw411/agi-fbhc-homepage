@@ -1,16 +1,25 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, MessageCircle, Github, Monitor, X, ExternalLink } from 'lucide-react';
+import { Calendar, MessageCircle, Github, Monitor, X, ExternalLink, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const easeOutExpo = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
-const springTransition = {
-  type: 'spring' as const,
-  stiffness: 220,
-  damping: 26,
-  mass: 0.9,
-};
+// 格式化日期：2026-05-17 → May 17, 2026 / 2026年5月17日
+function formatDate(dateStr: string, isZh: boolean): string {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  if (isZh) {
+    return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+  }
+  return d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
 
 type Category = 'All' | 'LLM & Agents' | 'AI for Biology' | 'AI for Health' | 'Group News' | 'Platforms';
 
@@ -25,6 +34,7 @@ interface Article {
   date: string;
   tags: string[];
   url: string;
+  cover_image?: string;
 }
 
 const categories: Category[] = [
@@ -44,84 +54,81 @@ const categoryStyles: Record<string, { bg: string; text: string; glow: string }>
   'Platforms':      { bg: 'rgba(245,158,11,0.1)',    text: '#fbbf24', glow: 'rgba(245,158,11,0.3)' },
 };
 
-const articles: Article[] = [
-  {
-    id: '1',
-    category: 'LLM & Agents',
-    source: 'GitHub',
-    title: 'BUAgents：企业级多智能体操作系统架构设计与实践',
-    excerpt: '本文介绍了 BUAgents 的整体架构设计，包括多智能体协作框架、工具调用机制和记忆管理系统...',
-    content: 'BUAgents 是我们团队自主研发的企业级多智能体操作系统，旨在为复杂科研任务提供自动化协作能力。系统采用分层架构设计，底层为工具调用与 API 编排引擎，中层为多智能体协作框架，上层为面向用户的任务编排界面。核心创新点包括动态任务分解算法、智能体间消息传递协议以及基于记忆的上下文管理系统。实验表明，BUAgents 在文献综述、代码生成和实验设计等任务上相比单智能体系统效率提升约 40%。',
-    contentEn: 'BUAgents is an enterprise-grade multi-agent operating system developed by our team, designed to automate collaborative capabilities for complex research tasks. The system adopts a layered architecture with a tool invocation and API orchestration engine at the bottom, a multi-agent collaboration framework in the middle, and a user-facing task orchestration interface at the top. Key innovations include dynamic task decomposition algorithms, inter-agent message passing protocols, and memory-based context management. Experiments show BUAgents improves efficiency by ~40% compared to single-agent systems on literature review, code generation, and experiment design tasks.',
-    date: '2025-01-15',
-    tags: ['Multi-Agent', 'LLM', 'System Design'],
-    url: '#',
-  },
-  {
-    id: '2',
-    category: 'AI for Biology',
-    source: 'WeChat',
-    title: '基于大语言模型的蛋白质功能预测新方法',
-    excerpt: '探索如何利用大语言模型的语义理解能力来提升蛋白质功能预测的准确性和泛化性能...',
-    content: '蛋白质功能预测是生物信息学领域的核心挑战之一。传统方法依赖序列比对和手工特征工程，难以捕捉蛋白质序列中深层的语义信息。我们提出了一种基于大语言模型的蛋白质功能预测框架 ProtLLM，将蛋白质序列视为一种特殊"语言"，利用预训练语言模型的强大表征能力进行功能注释。在多个基准数据集上的实验结果表明，ProtLLM 在 GO 术语预测和酶分类任务上均取得了 state-of-the-art 的性能。',
-    contentEn: 'Protein function prediction is one of the core challenges in bioinformatics. Traditional methods rely on sequence alignment and manual feature engineering, struggling to capture deep semantic information in protein sequences. We propose ProtLLM, a protein function prediction framework based on large language models that treats protein sequences as a special "language" and leverages the powerful representation capabilities of pretrained language models for functional annotation. Experimental results on multiple benchmark datasets show ProtLLM achieves state-of-the-art performance on GO term prediction and enzyme classification tasks.',
-    date: '2025-01-10',
-    tags: ['Protein LLM', 'Bioinformatics', 'Foundation Model'],
-    url: '#',
-  },
-  {
-    id: '3',
-    category: 'Platforms',
-    source: 'Platform',
-    title: 'XClaw 邮件推送系统 v2.0 版本更新',
-    excerpt: 'XClaw 2.0 新增 AI 智能摘要、多源 RSS 聚合和个性化推荐引擎，为科研人员提供更精准的信息...',
-    content: 'XClaw 智能邮件推送系统迎来重大版本更新。v2.0 版本引入了三大核心功能：AI 智能摘要引擎，能够自动提炼论文核心观点并生成简洁摘要；多源 RSS 聚合器，支持同时追踪 arXiv、PubMed、Google Scholar 等 20+ 学术数据源；个性化推荐系统，基于用户阅读历史和兴趣画像进行精准内容推荐。此外，新版本还优化了邮件模板设计，支持深色模式，并引入了更灵活的定时推送策略。',
-    contentEn: 'The XClaw intelligent email delivery system receives a major version update. v2.0 introduces three core features: an AI smart summary engine that automatically extracts key paper insights and generates concise summaries; a multi-source RSS aggregator supporting 20+ academic data sources including arXiv, PubMed, and Google Scholar; and a personalized recommendation system that delivers precisely curated content based on reading history and interest profiles. The new version also features optimized email templates, dark mode support, and more flexible scheduled delivery strategies.',
-    date: '2025-01-08',
-    tags: ['XClaw', 'RSS', 'AI Filtering'],
-    url: '#',
-  },
-  {
-    id: '4',
-    category: 'AI for Health',
-    source: 'WeChat',
-    title: '医疗知识图谱在临床决策支持中的应用',
-    excerpt: '构建面向临床决策支持的知识图谱系统，整合多源医学知识，提供可解释的诊断建议...',
-    content: '临床决策支持系统是医学人工智能的重要应用方向。我们构建了一个面向中文医疗场景的知识图谱系统 MedKG，整合了临床指南、医学教科书、药品说明书和真实世界电子病历等多源医学知识。MedKG 采用多模态知识融合技术，将结构化知识与非结构化文本统一表示，支持复杂医学推理。在三个三甲医院的临床验证中，系统提供的诊断建议与专家共识的一致率达到 92.6%。',
-    contentEn: 'Clinical decision support systems are an important application of medical AI. We built MedKG, a knowledge graph system for Chinese medical scenarios that integrates multi-source medical knowledge including clinical guidelines, medical textbooks, drug manuals, and real-world EHRs. MedKG adopts multi-modal knowledge fusion technology to uniformly represent structured knowledge and unstructured text, supporting complex medical reasoning. In clinical validation at three tertiary hospitals, the diagnostic suggestions provided by the system achieved 92.6% concordance with expert consensus.',
-    date: '2024-12-28',
-    tags: ['Knowledge Graph', 'Clinical AI', 'CDS'],
-    url: '#',
-  },
-  {
-    id: '5',
-    category: 'Group News',
-    source: 'WeChat',
-    title: '课题组参加 2025 江苏生成式 AI 创新大赛获三等奖',
-    excerpt: '我组项目 XBots 在 2025 江苏生成式人工智能创新大赛中获得三等奖...',
-    content: '2025 年江苏省生成式人工智能创新大赛在南京圆满落幕。我组参赛项目 XBots（可扩展智能体构建框架）从全省 200 多个参赛项目中脱颖而出，荣获大赛三等奖。XBots 是一个面向科研场景的生成式 AI 框架，支持通过自然语言描述快速构建多智能体工作流，实现自动化实验设计、数据分析和报告生成。评委组特别肯定了 XBots 在科研自动化领域的创新性和实用性。',
-    contentEn: 'The 2025 Jiangsu Generative AI Innovation Competition concluded successfully in Nanjing. Our project XBots (Extensible Bot Construction Framework) stood out from over 200 competing projects province-wide and won third prize. XBots is a generative AI framework for research scenarios that supports rapid construction of multi-agent workflows through natural language descriptions, enabling automated experiment design, data analysis, and report generation. The jury particularly recognized the innovation and practicality of XBots in the field of research automation.',
-    date: '2024-12-20',
-    tags: ['Award', 'Generative AI', 'XBots'],
-    url: '#',
-  },
-];
-
 const sourceIcons: Record<string, typeof Github> = {
   GitHub: Github,
   WeChat: MessageCircle,
   Platform: Monitor,
 };
 
+// API base URL - adjust if needed
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001/api';
+
 export default function UpdatesSection() {
   const { lang } = useLanguage();
   const isZh = lang === 'zh';
+
   const [activeCategory, setActiveCategory] = useState<Category>('All');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [total, setTotal] = useState(0);
+  const [visibleCount, setVisibleCount] = useState(6); // 每次显示6条
+
+  // Fetch articles from API
+  useEffect(() => {
+    async function fetchArticles() {
+      try {
+        setLoading(true);
+        setVisibleCount(6); // 切换分类时重置显示数量
+        const categoryParam = activeCategory === 'All' ? '' : `&category=${encodeURIComponent(activeCategory)}`;
+        const response = await fetch(`${API_BASE}/articles?limit=100&sortBy=date&sortOrder=desc${categoryParam}`);
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const result = await response.json();
+        if (result.success) {
+          // Map database fields to frontend format
+          const mapped = result.data.map((item: any) => ({
+            id: item.id,
+            category: item.category as Category,
+            source: item.source,
+            title: item.title,
+            excerpt: item.excerpt || '',
+            content: item.content || '',
+            contentEn: item.content_en || '',
+            date: item.date,
+            tags: Array.isArray(item.tags) ? item.tags : (item.tags ? JSON.parse(item.tags) : []),
+            url: item.url || '#',
+            cover_image: item.cover_image,
+          }));
+          setArticles(mapped);
+          setTotal(result.meta?.total || mapped.length);
+        } else {
+          throw new Error(result.error || 'Failed to fetch articles');
+        }
+      } catch (err: any) {
+        console.error('Failed to fetch articles:', err);
+        setError(err.message);
+        // Fallback: show empty state
+        setArticles([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchArticles();
+  }, [activeCategory]);
 
   const filtered = activeCategory === 'All'
     ? articles
     : articles.filter((a) => a.category === activeCategory);
+
+  // 分页显示的数据
+  const visibleArticles = filtered.slice(0, visibleCount);
+  const hasMore = visibleCount < filtered.length;
 
   const selected = articles.find((a) => a.id === selectedId);
   const selectedStyle = selected ? categoryStyles[selected.category] : null;
@@ -199,93 +206,125 @@ export default function UpdatesSection() {
           })}
         </motion.div>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-[#06B6D4]" />
+            <span className="ml-3 text-[#8B8B9E]">{isZh ? '加载中...' : 'Loading...'}</span>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div className="rounded-[14px] border border-red-500/20 bg-red-500/5 p-6 text-center">
+            <p className="text-red-400">{isZh ? '加载失败' : 'Failed to load'}: {error}</p>
+            <p className="mt-2 text-sm text-[#8B8B9E]">{isZh ? '请检查后端服务是否运行' : 'Please check if backend is running'}</p>
+          </div>
+        )}
+
         {/* Articles Grid */}
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-          <AnimatePresence mode="popLayout">
-            {filtered.map((article) => {
-              const catStyle = categoryStyles[article.category] || {
-                bg: 'rgba(255,255,255,0.05)',
-                text: '#8B8B9E',
-                glow: 'rgba(255,255,255,0.15)',
-              };
-              const SourceIcon = sourceIcons[article.source] || MessageCircle;
-              const isOpen = selectedId === article.id;
+        {!loading && !error && (
+          <>
+            <div className="mb-4 text-sm text-[#55556B]">
+              {isZh ? `共 ${total} 篇文章` : `${total} articles total`}
+              {activeCategory !== 'All' && (
+                <span> · {isZh ? '当前筛选' : 'Filtered'}: {filtered.length}</span>
+              )}
+            </div>
 
-              return (
-                <motion.article
-                  key={article.id}
-                  layout={!isOpen}
-                  layoutId={isOpen ? undefined : `update-card-${article.id}`}
-                  initial={{ opacity: 0, scale: 0.98 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.98 }}
-                  transition={{ duration: 0.3, ease: easeOutExpo }}
-                  className="group relative cursor-pointer overflow-hidden rounded-[14px] p-5 transition-[border-color,box-shadow,transform] duration-300 hover:-translate-y-1"
-                  style={{
-                    background: 'rgba(10, 10, 18, 0.55)',
-                    backdropFilter: 'blur(12px)',
-                    WebkitBackdropFilter: 'blur(12px)',
-                    border: '1px solid rgba(255, 255, 255, 0.06)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = catStyle.glow;
-                    e.currentTarget.style.boxShadow = `0 8px 32px ${catStyle.bg}`;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.06)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                  onClick={() => setSelectedId(article.id)}
-                >
-                  {/* Top row */}
-                  <div className="flex items-center justify-between">
-                    <span
-                      className="rounded-full px-2.5 py-1 text-xs font-medium"
-                      style={{ background: catStyle.bg, color: catStyle.text }}
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+              <AnimatePresence mode="popLayout">
+                {visibleArticles.map((article) => {
+                  const catStyle = categoryStyles[article.category] || {
+                    bg: 'rgba(255,255,255,0.05)',
+                    text: '#8B8B9E',
+                    glow: 'rgba(255,255,255,0.15)',
+                  };
+                  const SourceIcon = sourceIcons[article.source] || MessageCircle;
+
+                  return (
+                    <motion.article
+                      key={article.id}
+                      initial={{ opacity: 0, scale: 0.98 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.98 }}
+                      transition={{ duration: 0.3, ease: easeOutExpo }}
+                      className="group relative cursor-pointer overflow-hidden rounded-[14px] p-5 transition-[border-color,box-shadow,transform] duration-300 hover:-translate-y-1"
+                      style={{
+                        background: 'rgba(10, 10, 18, 0.55)',
+                        backdropFilter: 'blur(12px)',
+                        WebkitBackdropFilter: 'blur(12px)',
+                        border: '1px solid rgba(255, 255, 255, 0.06)',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = catStyle.glow;
+                        e.currentTarget.style.boxShadow = `0 8px 32px ${catStyle.bg}`;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.06)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                      onClick={() => setSelectedId(article.id)}
                     >
-                      {article.category}
-                    </span>
-                    <span className="flex items-center gap-1 text-xs text-[#55556B]">
-                      <SourceIcon className="h-3 w-3" />
-                      {article.source}
-                    </span>
-                  </div>
+                      {/* Top row */}
+                      <div className="flex items-center justify-between">
+                        <span
+                          className="rounded-full px-2.5 py-1 text-xs font-medium"
+                          style={{ background: catStyle.bg, color: catStyle.text }}
+                        >
+                          {article.category}
+                        </span>
+                        <span className="flex items-center gap-1 text-xs text-[#55556B]">
+                          <SourceIcon className="h-3 w-3" />
+                          {article.source}
+                        </span>
+                      </div>
 
-                  {/* Title */}
-                  <h3 className="mt-3 text-base font-semibold leading-snug text-[#F0F0F5] line-clamp-2">
-                    {article.title}
-                  </h3>
+                      {/* Title */}
+                      <h3 className="mt-3 text-base font-semibold leading-snug text-[#F0F0F5] line-clamp-2">
+                        {article.title}
+                      </h3>
 
-                  {/* Abstract */}
-                  <p className="mt-2 text-sm leading-relaxed text-[#8B8B9E] line-clamp-3" style={{ lineHeight: 1.6 }}>
-                    {article.excerpt}
-                  </p>
+                      {/* Abstract */}
+                      <p className="mt-2 text-sm leading-relaxed text-[#8B8B9E] line-clamp-3" style={{ lineHeight: 1.6 }}>
+                        {article.excerpt}
+                      </p>
 
-                  {/* Bottom row */}
-                  <div className="mt-4 flex items-center justify-between">
-                    <span className="flex items-center gap-1 text-xs text-[#55556B]">
-                      <Calendar className="h-3 w-3" />
-                      {article.date}
-                    </span>
-                    <span className="text-sm font-medium text-[#A5B4FC]">
-                      {isZh ? '阅读更多' : 'Read More'} &rarr;
-                    </span>
-                  </div>
-                </motion.article>
-              );
-            })}
-          </AnimatePresence>
-        </div>
+                      {/* Bottom row */}
+                      <div className="mt-4 flex items-center justify-between">
+                        <span className="flex items-center gap-1 text-xs text-[#55556B]">
+                          <Calendar className="h-3 w-3" />
+                          {formatDate(article.date, isZh)}
+                        </span>
+                        <span className="text-sm font-medium text-[#A5B4FC]">
+                          {isZh ? '阅读更多' : 'Read More'} &rarr;
+                        </span>
+                      </div>
+                    </motion.article>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+
+            {filtered.length === 0 && (
+              <div className="py-20 text-center text-[#55556B]">
+                {isZh ? '该分类下暂无文章' : 'No articles in this category'}
+              </div>
+            )}
+          </>
+        )}
 
         {/* View All button */}
-        <div className="mt-10 flex justify-center">
-          <button
-            onClick={() => alert('Coming soon')}
-            className="rounded-[10px] border border-white/15 px-6 py-2.5 text-sm font-medium text-[#F0F0F5] transition-all hover:border-white/25 hover:bg-[rgba(255,255,255,0.05)] active:scale-[0.98]"
-          >
-            {isZh ? '查看全部动态' : 'View All Updates'}
-          </button>
-        </div>
+        {!loading && !error && hasMore && (
+          <div className="mt-10 flex justify-center">
+            <button
+              onClick={() => setVisibleCount((prev) => prev + 6)}
+              className="rounded-[10px] border border-white/15 px-6 py-2.5 text-sm font-medium text-[#F0F0F5] transition-all hover:border-white/25 hover:bg-[rgba(255,255,255,0.05)] active:scale-[0.98]"
+            >
+              {isZh ? `查看更多 (${visibleArticles.length} / ${filtered.length})` : `Load More (${visibleArticles.length} / ${filtered.length})`}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ====== Modal Overlay ====== */}
@@ -325,7 +364,6 @@ export default function UpdatesSection() {
 
             {/* Modal Card */}
             <motion.div
-              layoutId={`update-card-${selected.id}`}
               className="relative z-10 mx-auto flex max-h-[85vh] w-[92vw] max-w-[860px] flex-col overflow-hidden rounded-[24px]"
               style={{
                 background: 'rgba(10, 10, 18, 0.92)',
@@ -334,7 +372,10 @@ export default function UpdatesSection() {
                 border: `1px solid ${selectedStyle.glow}`,
                 boxShadow: `0 0 0 1px rgba(255,255,255,0.04), 0 25px 80px ${selectedStyle.bg}, 0 8px 24px rgba(0,0,0,0.6)`,
               }}
-              transition={springTransition}
+              initial={{ opacity: 0, scale: 0.92, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.25, ease: easeOutExpo }}
             >
               {/* Top gradient line */}
               <div
@@ -364,7 +405,7 @@ export default function UpdatesSection() {
                   </span>
                   <span className="flex items-center gap-1 text-xs text-[#55556B]">
                     <Calendar className="h-3 w-3" />
-                    {selected.date}
+                    {formatDate(selected.date, isZh)}
                   </span>
                 </div>
                 <button
@@ -380,10 +421,9 @@ export default function UpdatesSection() {
                 {/* Title */}
                 <motion.h2
                   className="text-xl font-bold leading-snug text-[#F0F0F5] sm:text-2xl"
-                  initial={{ opacity: 0, y: 12 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 6 }}
-                  transition={{ delay: 0.08, duration: 0.35, ease: easeOutExpo }}
+                  transition={{ delay: 0.05, duration: 0.2, ease: easeOutExpo }}
                 >
                   {selected.title}
                 </motion.h2>
@@ -391,10 +431,9 @@ export default function UpdatesSection() {
                 {/* Tags */}
                 <motion.div
                   className="mt-4 flex flex-wrap gap-2"
-                  initial={{ opacity: 0, y: 12 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 6 }}
-                  transition={{ delay: 0.14, duration: 0.35, ease: easeOutExpo }}
+                  transition={{ delay: 0.08, duration: 0.2, ease: easeOutExpo }}
                 >
                   {selected.tags.map((tag) => (
                     <span
@@ -414,37 +453,117 @@ export default function UpdatesSection() {
                 <motion.div
                   className="my-6 h-px"
                   style={{ background: `linear-gradient(90deg, ${selectedStyle.text}30, transparent)` }}
-                  initial={{ opacity: 0, scaleX: 0 }}
-                  animate={{ opacity: 1, scaleX: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ delay: 0.2, duration: 0.4, ease: easeOutExpo }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.1, duration: 0.2 }}
                 />
 
                 {/* Excerpt */}
                 <motion.p
                   className="text-base font-medium leading-relaxed text-[#A5B4FC]"
                   style={{ lineHeight: 1.7 }}
-                  initial={{ opacity: 0, y: 12 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 6 }}
-                  transition={{ delay: 0.2, duration: 0.35, ease: easeOutExpo }}
+                  transition={{ delay: 0.12, duration: 0.2, ease: easeOutExpo }}
                 >
                   {selected.excerpt}
                 </motion.p>
 
-                {/* Full content */}
+                {/* Full content — Markdown rendered */}
                 <motion.div
-                  className="mt-5 space-y-4"
-                  initial={{ opacity: 0, y: 12 }}
+                  className="markdown-body mt-5"
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 6 }}
-                  transition={{ delay: 0.26, duration: 0.35, ease: easeOutExpo }}
+                  transition={{ delay: 0.15, duration: 0.2, ease: easeOutExpo }}
                 >
-                  {(isZh ? selected.content : selected.contentEn).split('\n\n').map((para, i) => (
-                    <p key={i} className="text-sm leading-relaxed text-[#8B8B9E]" style={{ lineHeight: 1.8 }}>
-                      {para}
-                    </p>
-                  ))}
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      h1: ({ children }) => (
+                        <h1 className="mb-4 mt-6 text-xl font-bold text-[#F0F0F5]">{children}</h1>
+                      ),
+                      h2: ({ children }) => (
+                        <h2 className="mb-3 mt-5 text-lg font-semibold text-[#F0F0F5]">{children}</h2>
+                      ),
+                      h3: ({ children }) => (
+                        <h3 className="mb-2 mt-4 text-base font-semibold text-[#F0F0F5]">{children}</h3>
+                      ),
+                      p: ({ children }) => (
+                        <p className="mb-4 text-sm leading-relaxed text-[#8B8B9E]" style={{ lineHeight: 1.8 }}>
+                          {children}
+                        </p>
+                      ),
+                      ul: ({ children }) => (
+                        <ul className="mb-4 ml-4 list-disc space-y-1 text-sm text-[#8B8B9E]">{children}</ul>
+                      ),
+                      ol: ({ children }) => (
+                        <ol className="mb-4 ml-4 list-decimal space-y-1 text-sm text-[#8B8B9E]">{children}</ol>
+                      ),
+                      li: ({ children }) => (
+                        <li className="leading-relaxed">{children}</li>
+                      ),
+                      a: ({ href, children }) => (
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#A5B4FC] underline underline-offset-2 transition-colors hover:text-[#C7D2FE]"
+                        >
+                          {children}
+                        </a>
+                      ),
+                      code: ({ children }) => (
+                        <code className="rounded bg-[rgba(255,255,255,0.06)] px-1.5 py-0.5 text-xs text-[#A5B4FC]">
+                          {children}
+                        </code>
+                      ),
+                      pre: ({ children }) => (
+                        <pre className="mb-4 overflow-x-auto rounded-lg bg-[rgba(255,255,255,0.04)] p-4 text-xs text-[#8B8B9E]">
+                          {children}
+                        </pre>
+                      ),
+                      blockquote: ({ children }) => (
+                        <blockquote className="mb-4 border-l-2 border-[#A5B4FC] pl-4 text-sm italic text-[#8B8B9E]">
+                          {children}
+                        </blockquote>
+                      ),
+                      img: ({ src, alt }) => (
+                        <img
+                          src={src}
+                          alt={alt || ''}
+                          className="mb-4 max-h-[400px] w-auto rounded-lg object-contain"
+                          loading="lazy"
+                        />
+                      ),
+                      hr: () => <hr className="my-6 border-[rgba(255,255,255,0.08)]" />,
+                      strong: ({ children }) => (
+                        <strong className="font-semibold text-[#F0F0F5]">{children}</strong>
+                      ),
+                      em: ({ children }) => (
+                        <em className="italic text-[#A5B4FC]">{children}</em>
+                      ),
+                      table: ({ children }) => (
+                        <div className="mb-4 overflow-x-auto">
+                          <table className="w-full border-collapse text-sm text-[#8B8B9E]">
+                            {children}
+                          </table>
+                        </div>
+                      ),
+                      thead: ({ children }) => (
+                        <thead className="bg-[rgba(255,255,255,0.04)] text-[#F0F0F5]">{children}</thead>
+                      ),
+                      th: ({ children }) => (
+                        <th className="border border-[rgba(255,255,255,0.08)] px-3 py-2 text-left text-xs font-semibold">
+                          {children}
+                        </th>
+                      ),
+                      td: ({ children }) => (
+                        <td className="border border-[rgba(255,255,255,0.06)] px-3 py-2">{children}</td>
+                      ),
+                    }}
+                  >
+                    {isZh ? selected.content : selected.contentEn}
+                  </ReactMarkdown>
                 </motion.div>
 
                 {/* Bottom divider */}

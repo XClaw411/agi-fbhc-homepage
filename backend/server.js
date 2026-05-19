@@ -44,12 +44,17 @@ app.use((req, res, next) => {
 });
 
 // ─── Health check ────────────────────────────────────────────
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
+  // Check database connection
+  const db = require('./services/db');
+  const dbOk = await db.testConnection();
+  
   res.json({
-    status: 'ok',
+    status: dbOk ? 'ok' : 'degraded',
     timestamp: new Date().toISOString(),
-    version: '1.0.0',
+    version: '1.1.0',
     uptime: process.uptime(),
+    database: dbOk ? 'connected' : 'disconnected',
   });
 });
 
@@ -128,6 +133,21 @@ app.listen(PORT, () => {
 ║  API Base: http://localhost:${PORT}/api           ║
 ╚═══════════════════════════════════════════════════╝
   `);
+});
+
+// ─── Graceful shutdown ───────────────────────────────────────
+process.on('SIGTERM', async () => {
+  console.log('[Server] SIGTERM received, shutting down gracefully...');
+  const db = require('./services/db');
+  await db.closePool();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('[Server] SIGINT received, shutting down gracefully...');
+  const db = require('./services/db');
+  await db.closePool();
+  process.exit(0);
 });
 
 module.exports = app;

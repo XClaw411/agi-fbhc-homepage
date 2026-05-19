@@ -3,15 +3,19 @@
  * GET /api/articles          - List all articles (with filters)
  * GET /api/articles/:id      - Get single article
  * POST /api/articles/scrape  - Trigger manual scrape
+ * POST /api/articles/import-wechat - Import WeChat ZIP
  * GET /api/articles/categories - List categories
  * GET /api/articles/stats    - Get statistics
  */
 
 const express = require('express');
 const router = express.Router();
+const fs = require('fs');
+const path = require('path');
 const articleService = require('../services/articles');
 const wechatScraper = require('../scrapers/wechat');
 const githubScraper = require('../scrapers/github');
+const { importWeChatZip } = require('../scripts/import_wechat');
 
 // ─── GET /api/articles ───────────────────────────────────────
 router.get('/', async (req, res) => {
@@ -103,11 +107,12 @@ router.post('/scrape', async (req, res) => {
       }
     }
 
-    // Scrape GitHub
+    // Scrape GitHub (repo-centric, reads README)
     if (source === 'all' || source === 'github') {
       try {
-        const events = await githubScraper.scrapeEvents();
-        const articles = githubScraper.convertEventsToArticles(events);
+        const articles = await githubScraper.scrapeReposAsArticles({
+          readReadme: true,
+        });
         for (const article of articles) {
           await articleService.upsertArticle(article);
         }
@@ -144,6 +149,84 @@ router.post('/scrape-url', async (req, res) => {
     await articleService.upsertArticle(article);
     res.json({ success: true, data: article });
   } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── POST /api/articles/import-wechat ──────────────────────
+// Import WeChat articles from ZIP file (admin endpoint)
+router.post('/import-wechat', async (req, res) => {
+  try {
+    const { zipPath } = req.body;
+
+    if (!zipPath) {
+      return res.status(400).json({
+        success: false,
+        error: 'zipPath is required. Provide absolute path to the ZIP file.',
+      });
+    }
+
+    if (!fs.existsSync(zipPath)) {
+      return res.status(404).json({
+        success: false,
+        error: `ZIP file not found: ${zipPath}`,
+      });
+    }
+
+    // Validate it's a ZIP file
+    if (!zipPath.toLowerCase().endsWith('.zip')) {
+      return res.status(400).json({
+        success: false,
+        error: 'File must be a ZIP archive',
+      });
+    }
+
+    console.log(`[API] Starting WeChat ZIP import: ${zipPath}`);
+    const results = await importWeChatZip(zipPath, { dryRun: false, verbose: false });
+
+    res.json({
+      success: true,
+      message: `Import complete. ${results.imported} articles imported, ${results.skipped} skipped, ${results.errors} errors.`,
+      results,
+    });
+  } catch (err) {
+    console.error('[API] Import error:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── POST /api/articles/sync-github ──────────────────────────
+// Trigger GitHub repo sync (repo-centric with README)
+router.post('/sync-github', async (req, res) => {
+  try {
+    const { quick = false, maxRepos = null } = req.body;
+
+    console.log('[API] Starting GitHub repo sync...');
+    const articles = await githubScraper.scrapeReposAsArticles({
+      readReadme: !quick,
+      maxRepos: maxRepos ? parseInt(maxRepos) : null,
+    });
+
+    let added = 0;
+    let updated = 0;
+
+    for (const article of articles) {
+      const exists = await articleService.getArticleById(article.id);
+      await articleService.upsertArticle(article);
+      if (exists) {
+        updated++;
+      } else {
+        added++;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `GitHub sync complete. ${added} new, ${updated} updated, ${articles.length} total.`,
+      results: { total: articles.length, added, updated },
+    });
+  } catch (err) {
+    console.error('[API] GitHub sync error:', err.message);
     res.status(500).json({ success: false, error: err.message });
   }
 });

@@ -1,46 +1,57 @@
 /**
  * Article Data Service
- * Manages article storage, retrieval, and caching
- * Uses JSON file storage (can be upgraded to MongoDB/PostgreSQL)
+ * Manages article storage, retrieval using MySQL
+ * Replaces JSON file storage with database
  */
 
-const fs = require('fs').promises;
-const path = require('path');
+const db = require('./db');
 
-const DATA_DIR = path.join(__dirname, '..', 'data');
-const ARTICLES_FILE = path.join(DATA_DIR, 'articles.json');
-
-// In-memory cache
+// In-memory cache for hot data
 let articlesCache = [];
 let cacheTimestamp = 0;
-const CACHE_TTL = (process.env.CACHE_TTL_SECONDS || 3600) * 1000;
+const CACHE_TTL = (process.env.CACHE_TTL_SECONDS || 300) * 1000; // 5 min default
 
 /**
- * Initialize storage directory and file
+ * Initialize storage - test DB connection and warm cache
  */
 async function initStorage() {
-  try {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    try {
-      await fs.access(ARTICLES_FILE);
-      const data = await fs.readFile(ARTICLES_FILE, 'utf-8');
-      articlesCache = JSON.parse(data);
-      cacheTimestamp = Date.now();
-      console.log(`[Storage] Loaded ${articlesCache.length} articles from disk`);
-    } catch {
-      // File doesn't exist, create with defaults
-      await fs.writeFile(ARTICLES_FILE, JSON.stringify([], null, 2));
-      articlesCache = [];
-      console.log('[Storage] Created new articles storage');
-    }
-  } catch (err) {
-    console.error('[Storage] Init error:', err.message);
+  const ok = await db.testConnection();
+  if (!ok) {
+    console.error('[Storage] Database connection failed, using empty cache');
     articlesCache = [];
+    return;
+  }
+  await warmCache();
+}
+
+/**
+ * Warm cache from database
+ */
+async function warmCache() {
+  try {
+    const rows = await db.query(
+      'SELECT * FROM articles ORDER BY date DESC, created_at DESC LIMIT 1000'
+    );
+    articlesCache = rows.map(row => ({
+      ...row,
+      tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags,
+    }));
+    cacheTimestamp = Date.now();
+    console.log(`[Storage] Cache warmed: ${articlesCache.length} articles`);
+  } catch (err) {
+    console.error('[Storage] Cache warm failed:', err.message);
   }
 }
 
 /**
- * Get all articles (from cache or disk)
+ * Check if cache is stale
+ */
+function isCacheStale() {
+  return Date.now() - cacheTimestamp > CACHE_TTL;
+}
+
+/**
+ * Get all articles with filters
  */
 async function getAllArticles(options = {}) {
   const {
@@ -52,44 +63,82 @@ async function getAllArticles(options = {}) {
     sortOrder = 'desc',
   } = options;
 
-  let articles = [...articlesCache];
+  // Build query
+  let sql = 'SELECT * FROM articles WHERE 1=1';
+  const params = [];
 
-  // Filter
+  // 过滤低质量内容：排除无意义的 GitHub 自动事件
+  sql += ` AND NOT (
+    source = 'GitHub'
+    AND (
+      title LIKE '%0 commits pushed%'
+      OR title LIKE '%New branch created%'
+      OR title LIKE '%New tag created%'
+      OR title LIKE '%pull request%merged%'
+      OR title LIKE '%pull request%opened%'
+      OR title LIKE '%issue%opened%'
+      OR title LIKE '%issue%closed%'
+    )
+  )`;
+
   if (category && category !== 'All') {
-    articles = articles.filter(a => a.category === category);
+    sql += ' AND category = ?';
+    params.push(category);
   }
   if (source) {
-    articles = articles.filter(a => a.source === source);
+    sql += ' AND source = ?';
+    params.push(source);
   }
 
   // Sort
-  articles.sort((a, b) => {
-    const aVal = sortBy === 'date' ? a.date : a[sortBy];
-    const bVal = sortBy === 'date' ? b.date : b[sortBy];
-    return sortOrder === 'desc'
-      ? String(bVal).localeCompare(String(aVal))
-      : String(aVal).localeCompare(String(bVal));
-  });
+  const validSortColumns = ['date', 'created_at', 'updated_at', 'title', 'source'];
+  const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'date';
+  const order = sortOrder === 'asc' ? 'ASC' : 'DESC';
+  sql += ` ORDER BY ${sortColumn} ${order}, created_at DESC`;
+
+  // Count total (同样应用过滤条件)
+  const countSql = sql.replace('SELECT *', 'SELECT COUNT(*) as total');
+  const countRows = await db.query(countSql.replace(/ORDER BY.*$/, ''), params);
+  const total = countRows[0]?.total || 0;
 
   // Paginate
-  const total = articles.length;
-  const paginated = articles.slice(offset, offset + limit);
+  sql += ' LIMIT ? OFFSET ?';
+  params.push(String(parseInt(limit)), String(parseInt(offset)));
 
-  return { articles: paginated, total };
+  const rows = await db.query(sql, params);
+  const articles = rows.map(row => ({
+    ...row,
+    tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags,
+  }));
+
+  return { articles, total };
 }
 
 /**
  * Get article by ID
  */
 async function getArticleById(id) {
-  return articlesCache.find(a => a.id === id) || null;
+  const rows = await db.query('SELECT * FROM articles WHERE id = ?', [id]);
+  if (!rows.length) return null;
+  const row = rows[0];
+  return {
+    ...row,
+    tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags,
+  };
 }
 
 /**
  * Get articles by category
  */
 async function getByCategory(category) {
-  return articlesCache.filter(a => a.category === category);
+  const rows = await db.query(
+    'SELECT * FROM articles WHERE category = ? ORDER BY date DESC',
+    [category]
+  );
+  return rows.map(row => ({
+    ...row,
+    tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags,
+  }));
 }
 
 /**
@@ -98,25 +147,42 @@ async function getByCategory(category) {
 async function upsertArticle(article) {
   if (!article || !article.id) return false;
 
-  const index = articlesCache.findIndex(a => a.id === article.id);
+  const {
+    id, title, excerpt = '', content = '', contentEn = '',
+    category, source, author = '', date, url,
+    coverImage = '', tags = [],
+  } = article;
 
-  if (index >= 0) {
-    // Update existing
-    articlesCache[index] = {
-      ...articlesCache[index],
-      ...article,
-      updatedAt: new Date().toISOString(),
-    };
-  } else {
-    // Insert new
-    articlesCache.push({
-      ...article,
-      createdAt: new Date().toISOString(),
-    });
-  }
+  const tagsJson = Array.isArray(tags) ? JSON.stringify(tags) : tags;
 
-  // Persist to disk
-  await persist();
+  const sql = `
+    INSERT INTO articles (
+      id, title, excerpt, content, content_en, category,
+      source, author, date, url, cover_image, tags, scraped_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+    ON DUPLICATE KEY UPDATE
+      title = VALUES(title),
+      excerpt = VALUES(excerpt),
+      content = VALUES(content),
+      content_en = VALUES(content_en),
+      category = VALUES(category),
+      source = VALUES(source),
+      author = VALUES(author),
+      date = VALUES(date),
+      url = VALUES(url),
+      cover_image = VALUES(cover_image),
+      tags = VALUES(tags),
+      scraped_at = VALUES(scraped_at),
+      updated_at = NOW()
+  `;
+
+  await db.query(sql, [
+    id, title, excerpt, content, contentEn, category,
+    source, author, date, url, coverImage, tagsJson,
+  ]);
+
+  // Invalidate cache
+  cacheTimestamp = 0;
   return true;
 }
 
@@ -126,16 +192,13 @@ async function upsertArticle(article) {
 async function addArticles(articles) {
   let added = 0;
   for (const article of articles) {
-    const exists = articlesCache.some(a => a.id === article.id);
-    if (!exists) {
-      articlesCache.push({
-        ...article,
-        createdAt: new Date().toISOString(),
-      });
+    const exists = await db.query('SELECT 1 FROM articles WHERE id = ?', [article.id]);
+    if (!exists.length) {
+      await upsertArticle(article);
       added++;
     }
   }
-  if (added > 0) await persist();
+  if (added > 0) cacheTimestamp = 0;
   return added;
 }
 
@@ -143,10 +206,9 @@ async function addArticles(articles) {
  * Delete article by ID
  */
 async function deleteArticle(id) {
-  const before = articlesCache.length;
-  articlesCache = articlesCache.filter(a => a.id !== id);
-  if (articlesCache.length < before) {
-    await persist();
+  const result = await db.query('DELETE FROM articles WHERE id = ?', [id]);
+  if (result.affectedRows > 0) {
+    cacheTimestamp = 0;
     return true;
   }
   return false;
@@ -156,54 +218,38 @@ async function deleteArticle(id) {
  * Get all categories with counts
  */
 async function getCategories() {
-  const counts = {};
-  for (const article of articlesCache) {
-    counts[article.category] = (counts[article.category] || 0) + 1;
-  }
-  return Object.entries(counts).map(([name, count]) => ({ name, count }));
+  const rows = await db.query(`
+    SELECT category as name, COUNT(*) as count
+    FROM articles
+    GROUP BY category
+    ORDER BY count DESC
+  `);
+  return rows;
 }
 
 /**
  * Get statistics
  */
 async function getStats() {
+  const [totalRows, sourceRows, categoryRows] = await Promise.all([
+    db.query('SELECT COUNT(*) as total FROM articles'),
+    db.query('SELECT source, COUNT(*) as count FROM articles GROUP BY source'),
+    db.query('SELECT category, COUNT(*) as count FROM articles GROUP BY category'),
+  ]);
+
   return {
-    total: articlesCache.length,
-    bySource: articlesCache.reduce((acc, a) => {
-      acc[a.source] = (acc[a.source] || 0) + 1;
-      return acc;
-    }, {}),
-    byCategory: articlesCache.reduce((acc, a) => {
-      acc[a.category] = (acc[a.category] || 0) + 1;
-      return acc;
-    }, {}),
+    total: totalRows[0]?.total || 0,
+    bySource: sourceRows.reduce((acc, r) => { acc[r.source] = r.count; return acc; }, {}),
+    byCategory: categoryRows.reduce((acc, r) => { acc[r.category] = r.count; return acc; }, {}),
     lastUpdated: cacheTimestamp,
   };
 }
 
 /**
- * Persist to disk
- */
-async function persist() {
-  try {
-    await fs.writeFile(ARTICLES_FILE, JSON.stringify(articlesCache, null, 2));
-    cacheTimestamp = Date.now();
-  } catch (err) {
-    console.error('[Storage] Persist error:', err.message);
-  }
-}
-
-/**
- * Refresh from disk
+ * Refresh from database (manual cache refresh)
  */
 async function refresh() {
-  try {
-    const data = await fs.readFile(ARTICLES_FILE, 'utf-8');
-    articlesCache = JSON.parse(data);
-    cacheTimestamp = Date.now();
-  } catch (err) {
-    console.error('[Storage] Refresh error:', err.message);
-  }
+  await warmCache();
 }
 
 module.exports = {

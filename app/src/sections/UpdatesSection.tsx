@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, MessageCircle, Github, Monitor, X, ExternalLink, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -6,6 +6,57 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 const easeOutExpo = [0.16, 1, 0.3, 1] as [number, number, number, number];
+
+// Staggered children animation config
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.04,
+      delayChildren: 0.1,
+    },
+  },
+  exit: {
+    opacity: 0,
+    transition: { staggerChildren: 0.02, staggerDirection: -1 },
+  },
+};
+
+const staggerItem = {
+  hidden: { opacity: 0, y: 20, scale: 0.97 },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.35, ease: easeOutExpo },
+  },
+  exit: {
+    opacity: 0,
+    y: -10,
+    scale: 0.98,
+    transition: { duration: 0.2, ease: [0.4, 0, 1, 1] as [number, number, number, number] },
+  },
+};
+
+// Modal content stagger
+const contentStagger = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.06, delayChildren: 0.15 },
+  },
+};
+
+const contentItem = {
+  hidden: { opacity: 0, y: 16, filter: 'blur(4px)' },
+  show: {
+    opacity: 1,
+    y: 0,
+    filter: 'blur(0px)',
+    transition: { duration: 0.4, ease: easeOutExpo },
+  },
+};
 
 // 格式化日期：2026-05-17 → May 17, 2026 / 2026年5月17日
 function formatDate(dateStr: string, isZh: boolean): string {
@@ -133,6 +184,9 @@ export default function UpdatesSection() {
   const selected = articles.find((a) => a.id === selectedId);
   const selectedStyle = selected ? categoryStyles[selected.category] : null;
 
+  // Memoized close handler
+  const handleClose = useCallback(() => setSelectedId(null), []);
+
   // Lock body scroll
   useEffect(() => {
     if (selectedId) {
@@ -146,11 +200,11 @@ export default function UpdatesSection() {
   // Esc to close
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setSelectedId(null);
+      if (e.key === 'Escape') handleClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [handleClose]);
 
   return (
     <section id="news" className="relative py-16 lg:py-24" style={{ background: '#050508' }}>
@@ -328,36 +382,40 @@ export default function UpdatesSection() {
       </div>
 
       {/* ====== Modal Overlay ====== */}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {selected && selectedStyle && (
           <motion.div
             className="fixed inset-0 z-50 flex items-center justify-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.35 }}
+            transition={{ duration: 0.3 }}
           >
-            {/* Backdrop */}
+            {/* Backdrop with animated radial glow */}
             <motion.div
               className="absolute inset-0"
               style={{
-                background: 'rgba(5, 5, 8, 0.75)',
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
+                background: 'rgba(5, 5, 8, 0.8)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
               }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.35 }}
-              onClick={() => setSelectedId(null)}
+              transition={{ duration: 0.3 }}
+              onClick={handleClose}
             >
-              {/* Subtle radial glow behind modal */}
-              <div
+              {/* Animated radial glow */}
+              <motion.div
                 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.5, ease: easeOutExpo }}
                 style={{
-                  width: '800px',
-                  height: '800px',
-                  background: `radial-gradient(circle, ${selectedStyle.glow.replace('0.3', '0.08')} 0%, transparent 70%)`,
+                  width: '900px',
+                  height: '900px',
+                  background: `radial-gradient(circle, ${selectedStyle.glow.replace('0.3', '0.12')} 0%, transparent 65%)`,
                 }}
               />
             </motion.div>
@@ -366,26 +424,37 @@ export default function UpdatesSection() {
             <motion.div
               className="relative z-10 mx-auto flex max-h-[85vh] w-[92vw] max-w-[860px] flex-col overflow-hidden rounded-[24px]"
               style={{
-                background: 'rgba(10, 10, 18, 0.92)',
+                background: 'rgba(10, 10, 18, 0.94)',
                 backdropFilter: 'blur(40px)',
                 WebkitBackdropFilter: 'blur(40px)',
                 border: `1px solid ${selectedStyle.glow}`,
                 boxShadow: `0 0 0 1px rgba(255,255,255,0.04), 0 25px 80px ${selectedStyle.bg}, 0 8px 24px rgba(0,0,0,0.6)`,
               }}
-              initial={{ opacity: 0, scale: 0.92, y: 30 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ duration: 0.25, ease: easeOutExpo }}
+              initial={{ opacity: 0, scale: 0.88, y: 40, rotateX: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0, rotateX: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 20, rotateX: -4 }}
+              transition={{ duration: 0.4, ease: easeOutExpo }}
             >
-              {/* Top gradient line */}
-              <div
-                className="h-0.5 w-full"
-                style={{ background: `linear-gradient(90deg, transparent, ${selectedStyle.text}, transparent)` }}
+              {/* Top animated gradient line */}
+              <motion.div
+                className="h-[2px] w-full"
+                initial={{ scaleX: 0, opacity: 0 }}
+                animate={{ scaleX: 1, opacity: 1 }}
+                transition={{ duration: 0.6, ease: easeOutExpo, delay: 0.1 }}
+                style={{
+                  background: `linear-gradient(90deg, transparent, ${selectedStyle.text}, ${selectedStyle.glow.replace('0.3', '0.6')}, transparent)`,
+                  transformOrigin: 'center',
+                }}
               />
 
               {/* Header bar */}
-              <div className="flex items-center justify-between px-6 pt-5 sm:px-8">
-                <div className="flex items-center gap-3">
+              <motion.div
+                className="flex items-center justify-between px-6 pt-5 sm:px-8"
+                variants={staggerContainer}
+                initial="hidden"
+                animate="show"
+              >
+                <motion.div className="flex items-center gap-3" variants={staggerItem}>
                   <span
                     className="rounded-full px-3 py-1 text-xs font-medium"
                     style={{
@@ -407,34 +476,35 @@ export default function UpdatesSection() {
                     <Calendar className="h-3 w-3" />
                     {formatDate(selected.date, isZh)}
                   </span>
-                </div>
-                <button
-                  onClick={() => setSelectedId(null)}
+                </motion.div>
+                <motion.button
+                  variants={staggerItem}
+                  onClick={handleClose}
                   className="flex h-8 w-8 items-center justify-center rounded-full text-[#55556B] transition-all hover:bg-[rgba(255,255,255,0.08)] hover:text-[#F0F0F5]"
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
                 >
                   <X className="h-4 w-4" />
-                </button>
-              </div>
+                </motion.button>
+              </motion.div>
 
-              {/* Content area */}
-              <div className="flex-1 overflow-y-auto px-6 pb-8 pt-5 sm:px-8">
+              {/* Content area with staggered animation */}
+              <motion.div
+                className="flex-1 overflow-y-auto px-6 pb-8 pt-5 sm:px-8"
+                variants={contentStagger}
+                initial="hidden"
+                animate="show"
+              >
                 {/* Title */}
                 <motion.h2
                   className="text-xl font-bold leading-snug text-[#F0F0F5] sm:text-2xl"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.05, duration: 0.2, ease: easeOutExpo }}
+                  variants={contentItem}
                 >
                   {selected.title}
                 </motion.h2>
 
                 {/* Tags */}
-                <motion.div
-                  className="mt-4 flex flex-wrap gap-2"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.08, duration: 0.2, ease: easeOutExpo }}
-                >
+                <motion.div className="mt-4 flex flex-wrap gap-2" variants={contentItem}>
                   {selected.tags.map((tag) => (
                     <span
                       key={tag}
@@ -452,10 +522,8 @@ export default function UpdatesSection() {
                 {/* Divider */}
                 <motion.div
                   className="my-6 h-px"
-                  style={{ background: `linear-gradient(90deg, ${selectedStyle.text}30, transparent)` }}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.1, duration: 0.2 }}
+                  style={{ background: `linear-gradient(90deg, ${selectedStyle.text}40, ${selectedStyle.glow.replace('0.3', '0.2')}, transparent)` }}
+                  variants={contentItem}
                 />
 
                 {/* Excerpt — hide for GitHub repos since full README is below */}
@@ -463,21 +531,14 @@ export default function UpdatesSection() {
                   <motion.p
                     className="text-base font-medium leading-relaxed text-[#A5B4FC]"
                     style={{ lineHeight: 1.7 }}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.12, duration: 0.2, ease: easeOutExpo }}
+                    variants={contentItem}
                   >
                     {selected.excerpt}
                   </motion.p>
                 )}
 
                 {/* Full content — Markdown rendered */}
-                <motion.div
-                  className="markdown-body mt-5"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.15, duration: 0.2, ease: easeOutExpo }}
-                >
+                <motion.div className="markdown-body mt-5" variants={contentItem}>
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     components={{
@@ -574,12 +635,9 @@ export default function UpdatesSection() {
                 {/* Bottom actions */}
                 <motion.div
                   className="flex flex-wrap items-center gap-3"
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 6 }}
-                  transition={{ delay: 0.32, duration: 0.35, ease: easeOutExpo }}
+                  variants={contentItem}
                 >
-                  <a
+                  <motion.a
                     href={selected.url}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -588,18 +646,20 @@ export default function UpdatesSection() {
                       background: `linear-gradient(135deg, ${selectedStyle.text}, ${selectedStyle.glow.replace('0.3', '0.6')})`,
                       boxShadow: `0 4px 20px ${selectedStyle.glow.replace('0.3', '0.15')}`,
                     }}
+                    whileHover={{ scale: 1.03, y: -1 }}
+                    whileTap={{ scale: 0.97 }}
                   >
                     {isZh ? '查看原文' : 'Open Original Article'}
                     <ExternalLink className="h-4 w-4" />
-                  </a>
+                  </motion.a>
                   <button
-                    onClick={() => setSelectedId(null)}
+                    onClick={handleClose}
                     className="rounded-[10px] border border-white/15 px-5 py-2.5 text-sm font-medium text-[#F0F0F5] transition-all hover:border-white/25 hover:bg-[rgba(255,255,255,0.05)]"
                   >
                     {isZh ? '关闭' : 'Close'}
                   </button>
                 </motion.div>
-              </div>
+              </motion.div>
             </motion.div>
           </motion.div>
         )}

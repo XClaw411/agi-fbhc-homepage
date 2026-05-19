@@ -1,5 +1,6 @@
 import HeroSection from '@/sections/HeroSection';
 import ResearchGroups from '@/sections/ResearchGroups';
+import PlatformsSection from '@/sections/PlatformsSection';
 import UpdatesSection from '@/sections/UpdatesSection';
 import AboutSection from '@/sections/AboutSection';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -13,6 +14,8 @@ export default function Home() {
       <HeroSection />
 
       <ResearchGroups />
+
+      <PlatformsSection />
 
       {/* Platforms → Updates */}
       <div

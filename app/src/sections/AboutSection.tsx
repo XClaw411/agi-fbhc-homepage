@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const easeOutExpo = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
@@ -22,7 +23,9 @@ const itemVariants = {
 
 export default function AboutSection() {
   const { lang } = useLanguage();
+  const { theme } = useTheme();
   const isZh = lang === 'zh';
+  const isDark = theme === 'dark';
 
   const stats = [
     { value: '3', label: isZh ? '研究方向' : 'Research Groups', color: '#7C3AED', bg: 'rgba(124, 58, 237, 0.1)' },
@@ -60,12 +63,14 @@ export default function AboutSection() {
     ];
 
   return (
-    <section id="about" className="relative py-16 lg:py-24" style={{ background: '#0A0A12' }}>
+    <section id="about" className="relative py-16 lg:py-24" style={{ background: isDark ? '#0A0A12' : '#ffffff' }}>
       {/* Bottom fade to black */}
       <div
         className="absolute bottom-0 left-0 right-0 h-24"
         style={{
-          background: 'linear-gradient(180deg, transparent 0%, #050508 100%)',
+          background: isDark
+            ? 'linear-gradient(180deg, transparent 0%, #050508 100%)'
+            : 'linear-gradient(180deg, transparent 0%, #f0f0f5 100%)',
         }}
       />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -79,11 +84,11 @@ export default function AboutSection() {
         >
           <div className="mb-3 flex items-center gap-3">
             <span className="inline-block h-0.5 w-6 bg-[#06B6D4]" />
-            <span className="text-xs font-medium tracking-[0.2em] text-[#55556B] uppercase">
+            <span className={`text-xs font-medium tracking-[0.2em] uppercase ${isDark ? 'text-[#55556B]' : 'text-[#8a8a9e]'}`}>
               {isZh ? '关于我们' : 'ABOUT US'}
             </span>
           </div>
-          <h2 className="display-lg text-[#F0F0F5]">
+          <h2 className={`display-lg ${isDark ? 'text-[#F0F0F5]' : 'text-[#1a1a2e]'}`}>
             {isZh ? '关于 AGI&FBHC' : 'About AGI&FBHC'}
           </h2>
         </motion.div>
@@ -98,7 +103,7 @@ export default function AboutSection() {
             transition={{ duration: 0.5, ease: easeOutExpo }}
           >
             {/* Team Name */}
-            <h3 className="mb-3 text-lg font-semibold text-[#F0F0F5]">
+            <h3 className={`mb-3 text-lg font-semibold ${isDark ? 'text-[#F0F0F5]' : 'text-[#1a1a2e]'}`}>
               {isZh
                 ? '通用人工智能&食品生物健康交叉研究中心'
                 : 'AGI & Food-Bio-Health Computing Research Center'}
@@ -106,7 +111,7 @@ export default function AboutSection() {
 
             {/* Main description from the display board */}
             <p
-              className="max-w-[520px] text-base text-[#8B8B9E]"
+              className={`max-w-[520px] text-base ${isDark ? 'text-[#8B8B9E]' : 'text-[#4a4a5e]'}`}
               style={{ lineHeight: 1.8 }}
             >
               {isZh
@@ -116,7 +121,7 @@ export default function AboutSection() {
 
             {/* Faculty Members */}
             <div className="mt-6">
-              <h4 className="mb-2.5 text-sm font-medium text-[#F0F0F5]">
+              <h4 className={`mb-2.5 text-sm font-medium ${isDark ? 'text-[#F0F0F5]' : 'text-[#1a1a2e]'}`}>
                 {isZh ? '团队成员' : 'Faculty Members'}
               </h4>
               <div className="flex flex-wrap gap-2">
@@ -127,11 +132,11 @@ export default function AboutSection() {
                     style={{
                       background: member.role === (isZh ? '负责人' : 'Leader')
                         ? 'rgba(124, 58, 237, 0.12)'
-                        : 'rgba(255, 255, 255, 0.05)',
+                        : (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'),
                       border: `1px solid ${member.role === (isZh ? '负责人' : 'Leader')
                         ? 'rgba(124, 58, 237, 0.25)'
-                        : 'rgba(255, 255, 255, 0.08)'}`,
-                      color: member.role === (isZh ? '负责人' : 'Leader') ? '#A78BFA' : '#8B8B9E',
+                        : (isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)')}`,
+                      color: member.role === (isZh ? '负责人' : 'Leader') ? '#A78BFA' : (isDark ? '#8B8B9E' : '#6B6B7B'),
                     }}
                   >
                     {member.name}
@@ -145,17 +150,18 @@ export default function AboutSection() {
 
             {/* Honors */}
             <div className="mt-5">
-              <h4 className="mb-2.5 text-sm font-medium text-[#F0F0F5]">
+              <h4 className={`mb-2.5 text-sm font-medium ${isDark ? 'text-[#F0F0F5]' : 'text-[#1a1a2e]'}`}>
                 {isZh ? '人才与荣誉' : 'Honors & Awards'}
               </h4>
               <div className="flex flex-wrap gap-2">
                 {honors.map((honor) => (
                   <span
                     key={honor}
-                    className="rounded-full px-2.5 py-0.5 text-xs text-[#8B8B9E]"
+                    className="rounded-full px-2.5 py-0.5 text-xs"
                     style={{
                       background: 'rgba(20, 184, 166, 0.08)',
                       border: '1px solid rgba(20, 184, 166, 0.15)',
+                      color: isDark ? '#8B8B9E' : '#4a4a5e',
                     }}
                   >
                     {honor}
@@ -170,7 +176,7 @@ export default function AboutSection() {
                 href="https://github.com/AGI-FBHC"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-[#A5B4FC] transition-colors hover:underline"
+                className={`text-sm transition-colors hover:underline ${isDark ? 'text-[#A5B4FC]' : 'text-[#5b5bd6]'}`}
               >
                 GitHub
               </a>
@@ -178,13 +184,13 @@ export default function AboutSection() {
                 href="https://huggingface.co/AGI-FBHC"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-[#A5B4FC] transition-colors hover:underline"
+                className={`text-sm transition-colors hover:underline ${isDark ? 'text-[#A5B4FC]' : 'text-[#5b5bd6]'}`}
               >
                 HuggingFace
               </a>
               <a
                 href="mailto:dengzhaohong@jiangnan.edu.cn"
-                className="flex items-center gap-1 text-sm text-[#A5B4FC] transition-colors hover:underline"
+                className={`flex items-center gap-1 text-sm transition-colors hover:underline ${isDark ? 'text-[#A5B4FC]' : 'text-[#5b5bd6]'}`}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
                 dengzhaohong@jiangnan.edu.cn
@@ -206,8 +212,8 @@ export default function AboutSection() {
                 variants={itemVariants}
                 className="rounded-xl p-5"
                 style={{
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
+                  border: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid rgba(0, 0, 0, 0.06)',
                 }}
               >
                 <span
@@ -216,7 +222,7 @@ export default function AboutSection() {
                 >
                   {stat.value}
                 </span>
-                <p className="mt-1 text-sm text-[#8B8B9E]">{stat.label}</p>
+                <p className={`mt-1 text-sm ${isDark ? 'text-[#8B8B9E]' : 'text-[#6B6B7B]'}`}>{stat.label}</p>
               </motion.div>
             ))}
           </motion.div>

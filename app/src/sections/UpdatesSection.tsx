@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, MessageCircle, Github, Monitor, X, ExternalLink, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -116,7 +117,9 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001/api';
 
 export default function UpdatesSection() {
   const { lang } = useLanguage();
+  const { theme } = useTheme();
   const isZh = lang === 'zh';
+  const isDark = theme === 'dark';
 
   const [activeCategory, setActiveCategory] = useState<Category>('All');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -207,7 +210,7 @@ export default function UpdatesSection() {
   }, [handleClose]);
 
   return (
-    <section id="news" className="relative py-16 lg:py-24" style={{ background: '#050508' }}>
+    <section id="news" className="relative py-16 lg:py-24" style={{ background: isDark ? '#050508' : '#f8f8fa' }}>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <motion.div
@@ -219,14 +222,14 @@ export default function UpdatesSection() {
         >
           <div className="mb-3 flex items-center gap-3">
             <span className="inline-block h-0.5 w-6 bg-[#06B6D4]" />
-            <span className="text-xs font-medium tracking-[0.2em] text-[#55556B] uppercase">
+            <span className={`text-xs font-medium tracking-[0.2em] uppercase ${isDark ? 'text-[#55556B]' : 'text-[#8a8a9e]'}`}>
               {isZh ? '最新动态' : "WHAT'S NEW"}
             </span>
           </div>
-          <h2 className="display-lg text-[#F0F0F5]">
+          <h2 className={`display-lg ${isDark ? 'text-[#F0F0F5]' : 'text-[#1a1a2e]'}`}>
             {isZh ? '最新动态' : 'Latest Updates'}
           </h2>
-          <p className="mt-4 text-lg text-[#8B8B9E]" style={{ lineHeight: 1.75 }}>
+          <p className={`mt-4 text-lg ${isDark ? 'text-[#8B8B9E]' : 'text-[#4a4a5e]'}`} style={{ lineHeight: 1.75 }}>
             {isZh
               ? '同步展示课题组公众号、科研动态、平台更新与方向组文章。'
               : 'Latest updates from the lab: publications, news, and platform releases.'}
@@ -249,9 +252,9 @@ export default function UpdatesSection() {
                 onClick={() => setActiveCategory(cat)}
                 className="rounded-full px-4 py-2 text-sm font-medium transition-all"
                 style={{
-                  background: isActive ? 'rgba(255,255,255,0.08)' : 'transparent',
-                  color: isActive ? '#F0F0F5' : '#8B8B9E',
-                  border: isActive ? '1px solid rgba(255,255,255,0.1)' : '1px solid transparent',
+                  background: isActive ? (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)') : 'transparent',
+                  color: isActive ? (isDark ? '#F0F0F5' : '#1a1a2e') : (isDark ? '#8B8B9E' : '#6B6B7B'),
+                  border: isActive ? (isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)') : '1px solid transparent',
                 }}
               >
                 {cat}
@@ -264,7 +267,7 @@ export default function UpdatesSection() {
         {loading && (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-[#06B6D4]" />
-            <span className="ml-3 text-[#8B8B9E]">{isZh ? '加载中...' : 'Loading...'}</span>
+            <span className={`ml-3 ${isDark ? 'text-[#8B8B9E]' : 'text-[#6B6B7B]'}`}>{isZh ? '加载中...' : 'Loading...'}</span>
           </div>
         )}
 
@@ -272,14 +275,14 @@ export default function UpdatesSection() {
         {error && !loading && (
           <div className="rounded-[14px] border border-red-500/20 bg-red-500/5 p-6 text-center">
             <p className="text-red-400">{isZh ? '加载失败' : 'Failed to load'}: {error}</p>
-            <p className="mt-2 text-sm text-[#8B8B9E]">{isZh ? '请检查后端服务是否运行' : 'Please check if backend is running'}</p>
+            <p className={`mt-2 text-sm ${isDark ? 'text-[#8B8B9E]' : 'text-[#6B6B7B]'}`}>{isZh ? '请检查后端服务是否运行' : 'Please check if backend is running'}</p>
           </div>
         )}
 
         {/* Articles Grid */}
         {!loading && !error && (
           <>
-            <div className="mb-4 text-sm text-[#55556B]">
+            <div className={`mb-4 text-sm ${isDark ? 'text-[#55556B]' : 'text-[#8a8a9e]'}`}>
               {isZh ? `共 ${total} 篇文章` : `${total} articles total`}
               {activeCategory !== 'All' && (
                 <span> · {isZh ? '当前筛选' : 'Filtered'}: {filtered.length}</span>
@@ -305,17 +308,17 @@ export default function UpdatesSection() {
                       transition={{ duration: 0.3, ease: easeOutExpo }}
                       className="group relative cursor-pointer overflow-hidden rounded-[14px] transition-[border-color,box-shadow,transform] duration-300 hover:scale-[1.02]"
                       style={{
-                        background: 'rgba(10, 10, 18, 0.55)',
+                        background: isDark ? 'rgba(10, 10, 18, 0.55)' : 'rgba(255, 255, 255, 0.7)',
                         backdropFilter: 'blur(12px)',
                         WebkitBackdropFilter: 'blur(12px)',
-                        border: '1px solid rgba(255, 255, 255, 0.06)',
+                        border: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid rgba(0, 0, 0, 0.06)',
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.borderColor = catStyle.glow;
                         e.currentTarget.style.boxShadow = `0 8px 32px ${catStyle.bg}`;
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.06)';
+                        e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)';
                         e.currentTarget.style.boxShadow = 'none';
                       }}
                       onClick={() => setSelectedId(article.id)}
@@ -335,29 +338,29 @@ export default function UpdatesSection() {
                           >
                             {article.category}
                           </span>
-                          <span className="flex items-center gap-1 text-xs text-[#55556B]">
+                          <span className={`flex items-center gap-1 text-xs ${isDark ? 'text-[#55556B]' : 'text-[#8a8a9e]'}`}>
                             <SourceIcon className="h-3 w-3" />
                             {article.source}
                           </span>
                         </div>
 
                         {/* Title */}
-                        <h3 className="mt-3 text-base font-semibold leading-snug text-[#F0F0F5] line-clamp-2">
+                        <h3 className={`mt-3 text-base font-semibold leading-snug line-clamp-2 ${isDark ? 'text-[#F0F0F5]' : 'text-[#1a1a2e]'}`}>
                           {article.title}
                         </h3>
 
                         {/* Abstract */}
-                        <p className="mt-2 text-sm leading-relaxed text-[#8B8B9E] line-clamp-3" style={{ lineHeight: 1.6 }}>
+                        <p className={`mt-2 text-sm leading-relaxed line-clamp-3 ${isDark ? 'text-[#8B8B9E]' : 'text-[#4a4a5e]'}`} style={{ lineHeight: 1.6 }}>
                           {article.excerpt}
                         </p>
 
                         {/* Bottom row */}
                         <div className="mt-4 flex items-center justify-between">
-                          <span className="flex items-center gap-1 text-xs text-[#55556B]">
+                          <span className={`flex items-center gap-1 text-xs ${isDark ? 'text-[#55556B]' : 'text-[#8a8a9e]'}`}>
                             <Calendar className="h-3 w-3" />
                             {formatDate(article.date, isZh)}
                           </span>
-                          <span className="text-sm font-medium text-[#A5B4FC]">
+                          <span className={`text-sm font-medium ${isDark ? 'text-[#A5B4FC]' : 'text-[#5b5bd6]'}`}>
                             {isZh ? '阅读更多' : 'Read More'} &rarr;
                           </span>
                         </div>
@@ -369,7 +372,7 @@ export default function UpdatesSection() {
             </div>
 
             {filtered.length === 0 && (
-              <div className="py-20 text-center text-[#55556B]">
+              <div className={`py-20 text-center ${isDark ? 'text-[#55556B]' : 'text-[#8a8a9e]'}`}>
                 {isZh ? '该分类下暂无文章' : 'No articles in this category'}
               </div>
             )}
@@ -381,7 +384,11 @@ export default function UpdatesSection() {
           <div className="mt-10 flex justify-center">
             <button
               onClick={() => setVisibleCount((prev) => prev + 6)}
-              className="rounded-[10px] border border-white/15 px-6 py-2.5 text-sm font-medium text-[#F0F0F5] transition-all hover:border-white/25 hover:bg-[rgba(255,255,255,0.05)] active:scale-[0.98]"
+              className={`rounded-[10px] border px-6 py-2.5 text-sm font-medium transition-all active:scale-[0.98] ${
+                isDark
+                  ? 'border-white/15 text-[#F0F0F5] hover:border-white/25 hover:bg-[rgba(255,255,255,0.05)]'
+                  : 'border-black/15 text-[#1a1a2e] hover:border-black/25 hover:bg-[rgba(0,0,0,0.05)]'
+              }`}
             >
               {isZh ? `查看更多 (${visibleArticles.length} / ${filtered.length})` : `Load More (${visibleArticles.length} / ${filtered.length})`}
             </button>
@@ -403,7 +410,7 @@ export default function UpdatesSection() {
             <motion.div
               className="absolute inset-0"
               style={{
-                background: 'rgba(5, 5, 8, 0.8)',
+                background: isDark ? 'rgba(5, 5, 8, 0.8)' : 'rgba(240, 240, 245, 0.8)',
                 backdropFilter: 'blur(16px)',
                 WebkitBackdropFilter: 'blur(16px)',
               }}
@@ -432,11 +439,11 @@ export default function UpdatesSection() {
             <motion.div
               className="relative z-10 mx-auto flex max-h-[85vh] w-[92vw] max-w-[860px] flex-col overflow-hidden rounded-[24px]"
               style={{
-                background: 'rgba(10, 10, 18, 0.94)',
+                background: isDark ? 'rgba(10, 10, 18, 0.94)' : 'rgba(255, 255, 255, 0.94)',
                 backdropFilter: 'blur(40px)',
                 WebkitBackdropFilter: 'blur(40px)',
                 border: `1px solid ${selectedStyle.glow}`,
-                boxShadow: `0 0 0 1px rgba(255,255,255,0.04), 0 25px 80px ${selectedStyle.bg}, 0 8px 24px rgba(0,0,0,0.6)`,
+                boxShadow: `0 0 0 1px ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'}, 0 25px 80px ${selectedStyle.bg}, 0 8px 24px rgba(0,0,0,0.6)`,
               }}
               initial={{ opacity: 0, scale: 0.88, y: 40, rotateX: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0, rotateX: 0 }}
@@ -473,14 +480,14 @@ export default function UpdatesSection() {
                   >
                     {selected.category}
                   </span>
-                  <span className="flex items-center gap-1 text-xs text-[#55556B]">
+                  <span className={`flex items-center gap-1 text-xs ${isDark ? 'text-[#55556B]' : 'text-[#8a8a9e]'}`}>
                     {(() => {
                       const SIcon = sourceIcons[selected.source] || MessageCircle;
                       return <SIcon className="h-3 w-3" />;
                     })()}
                     {selected.source}
                   </span>
-                  <span className="flex items-center gap-1 text-xs text-[#55556B]">
+                  <span className={`flex items-center gap-1 text-xs ${isDark ? 'text-[#55556B]' : 'text-[#8a8a9e]'}`}>
                     <Calendar className="h-3 w-3" />
                     {formatDate(selected.date, isZh)}
                   </span>
@@ -488,7 +495,11 @@ export default function UpdatesSection() {
                 <motion.button
                   variants={staggerItem}
                   onClick={handleClose}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-[#55556B] transition-all hover:bg-[rgba(255,255,255,0.08)] hover:text-[#F0F0F5]"
+                  className={`flex h-8 w-8 items-center justify-center rounded-full transition-all ${
+                    isDark
+                      ? 'text-[#55556B] hover:bg-[rgba(255,255,255,0.08)] hover:text-[#F0F0F5]'
+                      : 'text-[#8a8a9e] hover:bg-[rgba(0,0,0,0.08)] hover:text-[#1a1a2e]'
+                  }`}
                   whileHover={{ scale: 1.1, rotate: 90 }}
                   whileTap={{ scale: 0.9 }}
                 >
@@ -505,7 +516,7 @@ export default function UpdatesSection() {
               >
                 {/* Title */}
                 <motion.h2
-                  className="text-xl font-bold leading-snug text-[#F0F0F5] sm:text-2xl"
+                  className={`text-xl font-bold leading-snug sm:text-2xl ${isDark ? 'text-[#F0F0F5]' : 'text-[#1a1a2e]'}`}
                   variants={contentItem}
                 >
                   {selected.title}
@@ -516,10 +527,10 @@ export default function UpdatesSection() {
                   {selected.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="rounded-full px-2.5 py-0.5 text-xs font-medium text-[#8B8B9E]"
+                      className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${isDark ? 'text-[#8B8B9E]' : 'text-[#6B6B7B]'}`}
                       style={{
-                        background: 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(255,255,255,0.08)',
+                        background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                        border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)',
                       }}
                     >
                       {tag}
@@ -537,7 +548,7 @@ export default function UpdatesSection() {
                 {/* Excerpt — hide for GitHub repos since full README is below */}
                 {selected.source !== 'GitHub' && selected.excerpt && (
                   <motion.p
-                    className="text-base font-medium leading-relaxed text-[#A5B4FC]"
+                    className={`text-base font-medium leading-relaxed ${isDark ? 'text-[#A5B4FC]' : 'text-[#5b5bd6]'}`}
                     style={{ lineHeight: 1.7 }}
                     variants={contentItem}
                   >
@@ -551,24 +562,24 @@ export default function UpdatesSection() {
                     remarkPlugins={[remarkGfm]}
                     components={{
                       h1: ({ children }) => (
-                        <h1 className="mb-4 mt-6 text-xl font-bold text-[#F0F0F5]">{children}</h1>
+                        <h1 className={`mb-4 mt-6 text-xl font-bold ${isDark ? 'text-[#F0F0F5]' : 'text-[#1a1a2e]'}`}>{children}</h1>
                       ),
                       h2: ({ children }) => (
-                        <h2 className="mb-3 mt-5 text-lg font-semibold text-[#F0F0F5]">{children}</h2>
+                        <h2 className={`mb-3 mt-5 text-lg font-semibold ${isDark ? 'text-[#F0F0F5]' : 'text-[#1a1a2e]'}`}>{children}</h2>
                       ),
                       h3: ({ children }) => (
-                        <h3 className="mb-2 mt-4 text-base font-semibold text-[#F0F0F5]">{children}</h3>
+                        <h3 className={`mb-2 mt-4 text-base font-semibold ${isDark ? 'text-[#F0F0F5]' : 'text-[#1a1a2e]'}`}>{children}</h3>
                       ),
                       p: ({ children }) => (
-                        <p className="mb-4 text-sm leading-relaxed text-[#8B8B9E]" style={{ lineHeight: 1.8 }}>
+                        <p className={`mb-4 text-sm leading-relaxed ${isDark ? 'text-[#8B8B9E]' : 'text-[#4a4a5e]'}`} style={{ lineHeight: 1.8 }}>
                           {children}
                         </p>
                       ),
                       ul: ({ children }) => (
-                        <ul className="mb-4 ml-4 list-disc space-y-1 text-sm text-[#8B8B9E]">{children}</ul>
+                        <ul className={`mb-4 ml-4 list-disc space-y-1 text-sm ${isDark ? 'text-[#8B8B9E]' : 'text-[#4a4a5e]'}`}>{children}</ul>
                       ),
                       ol: ({ children }) => (
-                        <ol className="mb-4 ml-4 list-decimal space-y-1 text-sm text-[#8B8B9E]">{children}</ol>
+                        <ol className={`mb-4 ml-4 list-decimal space-y-1 text-sm ${isDark ? 'text-[#8B8B9E]' : 'text-[#4a4a5e]'}`}>{children}</ol>
                       ),
                       li: ({ children }) => (
                         <li className="leading-relaxed">{children}</li>
@@ -578,23 +589,23 @@ export default function UpdatesSection() {
                           href={href}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[#A5B4FC] underline underline-offset-2 transition-colors hover:text-[#C7D2FE]"
+                          className={`underline underline-offset-2 transition-colors ${isDark ? 'text-[#A5B4FC] hover:text-[#C7D2FE]' : 'text-[#5b5bd6] hover:text-[#7c7ce0]'}`}
                         >
                           {children}
                         </a>
                       ),
                       code: ({ children }) => (
-                        <code className="rounded bg-[rgba(255,255,255,0.06)] px-1.5 py-0.5 text-xs text-[#A5B4FC]">
+                        <code className={`rounded px-1.5 py-0.5 text-xs ${isDark ? 'bg-[rgba(255,255,255,0.06)] text-[#A5B4FC]' : 'bg-[rgba(0,0,0,0.06)] text-[#5b5bd6]'}`}>
                           {children}
                         </code>
                       ),
                       pre: ({ children }) => (
-                        <pre className="mb-4 overflow-x-auto rounded-lg bg-[rgba(255,255,255,0.04)] p-4 text-xs text-[#8B8B9E]">
+                        <pre className={`mb-4 overflow-x-auto rounded-lg p-4 text-xs ${isDark ? 'bg-[rgba(255,255,255,0.04)] text-[#8B8B9E]' : 'bg-[rgba(0,0,0,0.04)] text-[#4a4a5e]'}`}>
                           {children}
                         </pre>
                       ),
                       blockquote: ({ children }) => (
-                        <blockquote className="mb-4 border-l-2 border-[#A5B4FC] pl-4 text-sm italic text-[#8B8B9E]">
+                        <blockquote className={`mb-4 border-l-2 pl-4 text-sm italic ${isDark ? 'border-[#A5B4FC] text-[#8B8B9E]' : 'border-[#5b5bd6] text-[#4a4a5e]'}`}>
                           {children}
                         </blockquote>
                       ),
@@ -606,30 +617,30 @@ export default function UpdatesSection() {
                           loading="lazy"
                         />
                       ),
-                      hr: () => <hr className="my-6 border-[rgba(255,255,255,0.08)]" />,
+                      hr: () => <hr className={`my-6 ${isDark ? 'border-[rgba(255,255,255,0.08)]' : 'border-[rgba(0,0,0,0.08)]'}`} />,
                       strong: ({ children }) => (
-                        <strong className="font-semibold text-[#F0F0F5]">{children}</strong>
+                        <strong className={`font-semibold ${isDark ? 'text-[#F0F0F5]' : 'text-[#1a1a2e]'}`}>{children}</strong>
                       ),
                       em: ({ children }) => (
-                        <em className="italic text-[#A5B4FC]">{children}</em>
+                        <em className={`italic ${isDark ? 'text-[#A5B4FC]' : 'text-[#5b5bd6]'}`}>{children}</em>
                       ),
                       table: ({ children }) => (
                         <div className="mb-4 overflow-x-auto">
-                          <table className="w-full border-collapse text-sm text-[#8B8B9E]">
+                          <table className={`w-full border-collapse text-sm ${isDark ? 'text-[#8B8B9E]' : 'text-[#4a4a5e]'}`}>
                             {children}
                           </table>
                         </div>
                       ),
                       thead: ({ children }) => (
-                        <thead className="bg-[rgba(255,255,255,0.04)] text-[#F0F0F5]">{children}</thead>
+                        <thead className={`${isDark ? 'bg-[rgba(255,255,255,0.04)] text-[#F0F0F5]' : 'bg-[rgba(0,0,0,0.04)] text-[#1a1a2e]'}`}>{children}</thead>
                       ),
                       th: ({ children }) => (
-                        <th className="border border-[rgba(255,255,255,0.08)] px-3 py-2 text-left text-xs font-semibold">
+                        <th className={`border px-3 py-2 text-left text-xs font-semibold ${isDark ? 'border-[rgba(255,255,255,0.08)]' : 'border-[rgba(0,0,0,0.08)]'}`}>
                           {children}
                         </th>
                       ),
                       td: ({ children }) => (
-                        <td className="border border-[rgba(255,255,255,0.06)] px-3 py-2">{children}</td>
+                        <td className={`border px-3 py-2 ${isDark ? 'border-[rgba(255,255,255,0.06)]' : 'border-[rgba(0,0,0,0.06)]'}`}>{children}</td>
                       ),
                     }}
                   >
@@ -638,7 +649,7 @@ export default function UpdatesSection() {
                 </motion.div>
 
                 {/* Bottom divider */}
-                <div className="my-6 h-px bg-[rgba(255,255,255,0.06)]" />
+                <div className={`my-6 h-px ${isDark ? 'bg-[rgba(255,255,255,0.06)]' : 'bg-[rgba(0,0,0,0.06)]'}`} />
 
                 {/* Bottom actions */}
                 <motion.div
@@ -662,7 +673,11 @@ export default function UpdatesSection() {
                   </motion.a>
                   <button
                     onClick={handleClose}
-                    className="rounded-[10px] border border-white/15 px-5 py-2.5 text-sm font-medium text-[#F0F0F5] transition-all hover:border-white/25 hover:bg-[rgba(255,255,255,0.05)]"
+                    className={`rounded-[10px] border px-5 py-2.5 text-sm font-medium transition-all ${
+                      isDark
+                        ? 'border-white/15 text-[#F0F0F5] hover:border-white/25 hover:bg-[rgba(255,255,255,0.05)]'
+                        : 'border-black/15 text-[#1a1a2e] hover:border-black/25 hover:bg-[rgba(0,0,0,0.05)]'
+                    }`}
                   >
                     {isZh ? '关闭' : 'Close'}
                   </button>

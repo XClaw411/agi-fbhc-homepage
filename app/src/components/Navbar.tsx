@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Github, Menu, X, Languages } from 'lucide-react';
+import { Github, Menu, X, Languages, Sun, Moon } from 'lucide-react';
 import { useActiveSection } from '@/hooks/useActiveSection';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -12,6 +13,7 @@ export default function Navbar() {
   const location = useLocation();
   const isHome = location.pathname === '/';
   const { lang, toggleLang } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 50);
@@ -43,8 +45,10 @@ export default function Navbar() {
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] as [number, number, number, number], delay: 0.2 }}
       className="fixed top-0 left-0 right-0 z-50 h-16 transition-colors"
       style={{
-        background: scrolled ? 'rgba(10, 10, 18, 0.9)' : 'rgba(10, 10, 18, 0.65)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+        background: scrolled
+          ? (theme === 'dark' ? 'rgba(10, 10, 18, 0.9)' : 'rgba(255, 255, 255, 0.9)')
+          : (theme === 'dark' ? 'rgba(10, 10, 18, 0.65)' : 'rgba(255, 255, 255, 0.65)'),
+        borderBottom: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid rgba(0, 0, 0, 0.06)',
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
       }}
@@ -55,7 +59,7 @@ export default function Navbar() {
           <div className="flex items-center justify-center rounded-xl bg-white/90 p-1">
               <img src="/logo.png" alt="AGI&FBHC" className="h-6 w-6 object-contain" />
           </div>
-          <span className="text-sm font-semibold tracking-wide text-[#F0F0F5]">
+          <span className={`text-sm font-semibold tracking-wide ${theme === 'dark' ? 'text-[#F0F0F5]' : 'text-[#1a1a2e]'}`}>
             AGI&FBHC
           </span>
         </Link>
@@ -75,7 +79,8 @@ export default function Navbar() {
                   href={link.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="relative px-3 py-2 text-sm font-medium text-[#8B8B9E] transition-colors hover:text-[#F0F0F5]"
+                  className={`relative px-3 py-2 text-sm font-medium transition-colors hover:${theme === 'dark' ? 'text-[#F0F0F5]' : 'text-[#1a1a2e]'}`}
+                  style={{ color: theme === 'dark' ? '#8B8B9E' : '#6B6B7B' }}
                 >
                   {link.label}
                 </a>
@@ -88,10 +93,10 @@ export default function Navbar() {
                 onClick={() => handleNavClick(link.href)}
                 className="relative px-3 py-2 text-sm font-medium transition-colors"
                 style={{
-                  color: isActive ? '#A5B4FC' : '#8B8B9E',
+                  color: isActive ? '#A5B4FC' : (theme === 'dark' ? '#8B8B9E' : '#6B6B7B'),
                 }}
               >
-                <span className="hover:text-[#F0F0F5]">{link.label}</span>
+                <span className={`hover:${theme === 'dark' ? 'text-[#F0F0F5]' : 'text-[#1a1a2e]'}`}>{link.label}</span>
                 {isActive && (
                   <motion.span
                     layoutId="nav-indicator"
@@ -105,10 +110,27 @@ export default function Navbar() {
 
         {/* Right side */}
         <div className="flex items-center gap-2">
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-colors ${
+              theme === 'dark'
+                ? 'border-white/10 text-[#8B8B9E] hover:border-white/20 hover:text-[#F0F0F5]'
+                : 'border-black/10 text-[#6B6B7B] hover:border-black/20 hover:text-[#1a1a2e]'
+            }`}
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+
           {/* Language Toggle */}
           <button
             onClick={toggleLang}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-white/10 px-3 text-xs font-medium text-[#8B8B9E] transition-colors hover:border-white/20 hover:text-[#F0F0F5]"
+            className={`flex h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition-colors ${
+              theme === 'dark'
+                ? 'border-white/10 text-[#8B8B9E] hover:border-white/20 hover:text-[#F0F0F5]'
+                : 'border-black/10 text-[#6B6B7B] hover:border-black/20 hover:text-[#1a1a2e]'
+            }`}
             aria-label="Toggle language"
           >
             <Languages className="h-3.5 w-3.5" />
@@ -119,7 +141,11 @@ export default function Navbar() {
             href="https://github.com/AGI-FBHC"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 text-[#8B8B9E] transition-colors hover:border-white/20 hover:text-[#F0F0F5]"
+            className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-colors ${
+              theme === 'dark'
+                ? 'border-white/10 text-[#8B8B9E] hover:border-white/20 hover:text-[#F0F0F5]'
+                : 'border-black/10 text-[#6B6B7B] hover:border-black/20 hover:text-[#1a1a2e]'
+            }`}
             aria-label="GitHub"
           >
             <Github className="h-4 w-4" />
@@ -128,7 +154,9 @@ export default function Navbar() {
           {/* Hamburger */}
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-[#8B8B9E] transition-colors hover:text-[#F0F0F5] lg:hidden"
+            className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors lg:hidden ${
+              theme === 'dark' ? 'text-[#8B8B9E] hover:text-[#F0F0F5]' : 'text-[#6B6B7B] hover:text-[#1a1a2e]'
+            }`}
             aria-label="Toggle menu"
           >
             {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -146,10 +174,10 @@ export default function Navbar() {
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
             className="overflow-hidden lg:hidden"
             style={{
-              background: 'rgba(10, 10, 18, 0.95)',
+              background: theme === 'dark' ? 'rgba(10, 10, 18, 0.95)' : 'rgba(255, 255, 255, 0.95)',
               backdropFilter: 'blur(24px)',
               WebkitBackdropFilter: 'blur(24px)',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+              borderBottom: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid rgba(0, 0, 0, 0.06)',
             }}
           >
             <nav className="flex flex-col px-4 py-3">
@@ -161,7 +189,9 @@ export default function Navbar() {
                       href={link.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="py-3 text-base font-medium text-[#8B8B9E] transition-colors hover:text-[#F0F0F5]"
+                      className={`py-3 text-base font-medium transition-colors ${
+                        theme === 'dark' ? 'text-[#8B8B9E] hover:text-[#F0F0F5]' : 'text-[#6B6B7B] hover:text-[#1a1a2e]'
+                      }`}
                       onClick={() => setMenuOpen(false)}
                     >
                       {link.label}
@@ -172,15 +202,28 @@ export default function Navbar() {
                   <button
                     key={link.label}
                     onClick={() => handleNavClick(link.href)}
-                    className="py-3 text-left text-base font-medium text-[#8B8B9E] transition-colors hover:text-[#F0F0F5]"
+                    className={`py-3 text-left text-base font-medium transition-colors ${
+                      theme === 'dark' ? 'text-[#8B8B9E] hover:text-[#F0F0F5]' : 'text-[#6B6B7B] hover:text-[#1a1a2e]'
+                    }`}
                   >
                     {link.label}
                   </button>
                 );
               })}
               <button
+                onClick={() => { toggleTheme(); setMenuOpen(false); }}
+                className={`flex items-center gap-2 py-3 text-base font-medium transition-colors ${
+                  theme === 'dark' ? 'text-[#8B8B9E] hover:text-[#F0F0F5]' : 'text-[#6B6B7B] hover:text-[#1a1a2e]'
+                }`}
+              >
+                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+              </button>
+              <button
                 onClick={() => { toggleLang(); setMenuOpen(false); }}
-                className="flex items-center gap-2 py-3 text-base font-medium text-[#8B8B9E] transition-colors hover:text-[#F0F0F5]"
+                className={`flex items-center gap-2 py-3 text-base font-medium transition-colors ${
+                  theme === 'dark' ? 'text-[#8B8B9E] hover:text-[#F0F0F5]' : 'text-[#6B6B7B] hover:text-[#1a1a2e]'
+                }`}
               >
                 <Languages className="h-4 w-4" />
                 {lang === 'zh' ? 'Switch to English' : '切换为中文'}

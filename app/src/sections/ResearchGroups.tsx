@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Bot, Dna, HeartPulse } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const easeOutExpo = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
@@ -23,7 +24,9 @@ const cardVariants = {
 
 export default function ResearchGroups() {
   const { lang } = useLanguage();
+  const { theme } = useTheme();
   const isZh = lang === 'zh';
+  const isDark = theme === 'dark';
 
   const groups = [
     {
@@ -40,7 +43,7 @@ export default function ResearchGroups() {
       bgClass: 'bg-[rgba(139,92,246,0.1)]',
       borderTop: 'linear-gradient(90deg, #4c1d95 0%, #7c3aed 100%)',
       leftBorder: 'rgba(124, 58, 237, 0.4)',
-      cardBorder: 'rgba(139, 92, 246, 0.08)',
+      cardBorder: isDark ? 'rgba(139, 92, 246, 0.08)' : 'rgba(139, 92, 246, 0.12)',
       glowBorder: 'rgba(139, 92, 246, 0.2)',
       shadow: '0 8px 32px rgba(139, 92, 246, 0.08)',
       link: '/groups/llm-agent',
@@ -62,7 +65,7 @@ export default function ResearchGroups() {
       bgClass: 'bg-[rgba(20,184,166,0.1)]',
       borderTop: 'linear-gradient(90deg, #0f766e 0%, #14b8a6 100%)',
       leftBorder: 'rgba(20, 184, 166, 0.4)',
-      cardBorder: 'rgba(20, 184, 166, 0.08)',
+      cardBorder: isDark ? 'rgba(20, 184, 166, 0.08)' : 'rgba(20, 184, 166, 0.12)',
       glowBorder: 'rgba(20, 184, 166, 0.2)',
       shadow: '0 8px 32px rgba(20, 184, 166, 0.08)',
       link: '/groups/ai-for-biology',
@@ -84,7 +87,7 @@ export default function ResearchGroups() {
       bgClass: 'bg-[rgba(14,165,233,0.1)]',
       borderTop: 'linear-gradient(90deg, #0369a1 0%, #0ea5e9 100%)',
       leftBorder: 'rgba(14, 165, 233, 0.4)',
-      cardBorder: 'rgba(14, 165, 233, 0.08)',
+      cardBorder: isDark ? 'rgba(14, 165, 233, 0.08)' : 'rgba(14, 165, 233, 0.12)',
       glowBorder: 'rgba(14, 165, 233, 0.2)',
       shadow: '0 8px 32px rgba(14, 165, 233, 0.08)',
       link: '/groups/ai-for-health',
@@ -99,7 +102,9 @@ export default function ResearchGroups() {
       id="research-groups"
       className="relative py-16 lg:py-24"
       style={{
-        background: 'linear-gradient(180deg, #050508 0%, #080810 20%, #0A0A12 100%)',
+        background: isDark
+          ? 'linear-gradient(180deg, #050508 0%, #080810 20%, #0A0A12 100%)'
+          : 'linear-gradient(180deg, #f0f0f5 0%, #f5f5f8 20%, #ffffff 100%)',
       }}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -113,15 +118,15 @@ export default function ResearchGroups() {
         >
           <div className="mb-3 flex items-center gap-3">
             <span className="inline-block h-0.5 w-6 bg-[#06B6D4]" />
-            <span className="text-xs font-medium tracking-[0.2em] text-[#55556B] uppercase">
+            <span className={`text-xs font-medium tracking-[0.2em] uppercase ${isDark ? 'text-[#55556B]' : 'text-[#8a8a9e]'}`}>
               {isZh ? '研究方向' : 'RESEARCH DIRECTIONS'}
             </span>
           </div>
-          <h2 className="display-lg text-[#F0F0F5]">
+          <h2 className={`display-lg ${isDark ? 'text-[#F0F0F5]' : 'text-[#1a1a2e]'}`}>
             {isZh ? '研究方向' : 'Research Groups'}
           </h2>
           <p
-            className="mt-4 max-w-[600px] text-lg text-[#8B8B9E]"
+            className={`mt-4 max-w-[600px] text-lg ${isDark ? 'text-[#8B8B9E]' : 'text-[#4a4a5e]'}`}
             style={{ lineHeight: 1.75 }}
           >
             {isZh
@@ -146,7 +151,7 @@ export default function ResearchGroups() {
                   <div
                     className="group relative overflow-hidden rounded-2xl p-6 transition-all duration-300"
                     style={{
-                      background: 'rgba(10, 10, 18, 0.55)',
+                      background: isDark ? 'rgba(10, 10, 18, 0.55)' : 'rgba(255, 255, 255, 0.7)',
                       backdropFilter: 'blur(12px)',
                       WebkitBackdropFilter: 'blur(12px)',
                       border: `1px solid ${group.cardBorder}`,
@@ -185,7 +190,7 @@ export default function ResearchGroups() {
                     </div>
 
                     {/* Title */}
-                    <h3 className="mt-4 display-md text-[#F0F0F5]">{group.title}</h3>
+                    <h3 className={`mt-4 display-md ${isDark ? 'text-[#F0F0F5]' : 'text-[#1a1a2e]'}`}>{group.title}</h3>
 
                     {/* English subtitle */}
                     <p
@@ -196,11 +201,11 @@ export default function ResearchGroups() {
                     </p>
 
                     {/* Divider */}
-                    <div className="my-4 h-px bg-[rgba(255,255,255,0.06)]" />
+                    <div className={`my-4 h-px ${isDark ? 'bg-[rgba(255,255,255,0.06)]' : 'bg-[rgba(0,0,0,0.06)]'}`} />
 
                     {/* Description */}
                     <p
-                      className="text-sm leading-relaxed text-[#8B8B9E]"
+                      className={`text-sm leading-relaxed ${isDark ? 'text-[#8B8B9E]' : 'text-[#4a4a5e]'}`}
                       style={{ lineHeight: 1.7 }}
                     >
                       {group.description}

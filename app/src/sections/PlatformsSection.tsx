@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { FlaskConical, Mail, Check } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const easeOutExpo = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
@@ -22,10 +23,12 @@ const cardVariants = {
 
 export default function PlatformsSection() {
   const { lang } = useLanguage();
+  const { theme } = useTheme();
   const isZh = lang === 'zh';
+  const isDark = theme === 'dark';
 
   return (
-    <section id="platforms" className="relative py-16 lg:py-24" style={{ background: '#0A0A12' }}>
+    <section id="platforms" className="relative py-16 lg:py-24" style={{ background: isDark ? '#0A0A12' : '#ffffff' }}>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <motion.div
@@ -37,14 +40,14 @@ export default function PlatformsSection() {
         >
           <div className="mb-3 flex items-center gap-3">
             <span className="inline-block h-0.5 w-6 bg-[#06B6D4]" />
-            <span className="text-xs font-medium tracking-[0.2em] text-[#55556B] uppercase">
+            <span className={`text-xs font-medium tracking-[0.2em] uppercase ${isDark ? 'text-[#55556B]' : 'text-[#8a8a9e]'}`}>
               {isZh ? '基础设施' : 'INFRASTRUCTURE'}
             </span>
           </div>
-          <h2 className="display-lg text-[#F0F0F5]">
+          <h2 className={`display-lg ${isDark ? 'text-[#F0F0F5]' : 'text-[#1a1a2e]'}`}>
             {isZh ? '平台工具' : 'Platforms'}
           </h2>
-          <p className="mt-4 text-lg text-[#8B8B9E]" style={{ lineHeight: 1.75 }}>
+          <p className={`mt-4 text-lg ${isDark ? 'text-[#8B8B9E]' : 'text-[#4a4a5e]'}`} style={{ lineHeight: 1.75 }}>
             {isZh
               ? '课题组自主研发的研究基础设施与工具平台。'
               : 'Research infrastructure and tool platforms developed by the lab.'}
@@ -67,21 +70,21 @@ export default function PlatformsSection() {
               rel="noopener noreferrer"
               className="group block overflow-hidden rounded-2xl p-8 transition-all duration-300 hover:-translate-y-1"
               style={{
-                background: 'rgba(10, 10, 18, 0.55)',
+                background: isDark ? 'rgba(10, 10, 18, 0.55)' : 'rgba(255, 255, 255, 0.7)',
                 backdropFilter: 'blur(12px)',
                 WebkitBackdropFilter: 'blur(12px)',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
+                border: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid rgba(0, 0, 0, 0.06)',
                 borderLeft: '4px solid transparent',
               }}
               onMouseEnter={(e) => {
                 const el = e.currentTarget;
-                el.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                el.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
                 el.style.borderLeft = '4px solid #6366f1';
                 el.style.boxShadow = '0 8px 32px rgba(99, 102, 241, 0.06)';
               }}
               onMouseLeave={(e) => {
                 const el = e.currentTarget;
-                el.style.borderColor = 'rgba(255, 255, 255, 0.06)';
+                el.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)';
                 el.style.borderLeft = '4px solid transparent';
                 el.style.boxShadow = 'none';
               }}
@@ -94,16 +97,16 @@ export default function PlatformsSection() {
                 <FlaskConical className="h-7 w-7 text-[#818cf8]" />
               </div>
 
-              <h3 className="mt-5 display-md text-[#F0F0F5]">
+              <h3 className={`mt-5 display-md ${isDark ? 'text-[#F0F0F5]' : 'text-[#1a1a2e]'}`}>
                 {isZh ? '科研协作平台' : 'Research Collaboration Platform'}
               </h3>
-              <p className="mt-1 text-sm italic text-[#55556B]">
+              <p className={`mt-1 text-sm italic ${isDark ? 'text-[#55556B]' : 'text-[#8a8a9e]'}`}>
                 {isZh ? 'AI 辅助的科研协作工作空间' : 'AI-assisted scientific research workspace'}
               </p>
 
-              <div className="my-4 h-px bg-[rgba(255,255,255,0.06)]" />
+              <div className={`my-4 h-px ${isDark ? 'bg-[rgba(255,255,255,0.06)]' : 'bg-[rgba(0,0,0,0.06)]'}`} />
 
-              <p className="max-w-[400px] text-sm leading-relaxed text-[#8B8B9E]" style={{ lineHeight: 1.7 }}>
+              <p className={`max-w-[400px] text-sm leading-relaxed ${isDark ? 'text-[#8B8B9E]' : 'text-[#4a4a5e]'}`} style={{ lineHeight: 1.7 }}>
                 {isZh
                   ? '面向课题组科研协作、文献管理、任务推进与 AI 辅助研究的综合平台。'
                   : 'An integrated platform for team collaboration, literature management, and AI-assisted research.'}
@@ -116,14 +119,18 @@ export default function PlatformsSection() {
                   : ['Literature Management', 'AI-Assisted Research', 'Task & Progress Tracking']
                 ).map((f) => (
                   <div key={f} className="flex items-center gap-2">
-                    <Check className="h-3.5 w-3.5 text-[#8B8B9E]" />
-                    <span className="text-sm text-[#8B8B9E]">{f}</span>
+                    <Check className={`h-3.5 w-3.5 ${isDark ? 'text-[#8B8B9E]' : 'text-[#6B6B7B]'}`} />
+                    <span className={`text-sm ${isDark ? 'text-[#8B8B9E]' : 'text-[#6B6B7B]'}`}>{f}</span>
                   </div>
                 ))}
               </div>
 
               {/* Button */}
-              <div className="mt-6 inline-flex items-center gap-2 rounded-[10px] border border-white/15 px-5 py-2.5 text-sm font-medium text-[#F0F0F5] transition-all group-hover:border-white/25 group-hover:bg-[rgba(255,255,255,0.05)]">
+              <div className={`mt-6 inline-flex items-center gap-2 rounded-[10px] border px-5 py-2.5 text-sm font-medium transition-all group-hover:bg-[rgba(255,255,255,0.05)] ${
+                isDark
+                  ? 'border-white/15 text-[#F0F0F5] group-hover:border-white/25'
+                  : 'border-black/15 text-[#1a1a2e] group-hover:border-black/25 group-hover:bg-[rgba(0,0,0,0.05)]'
+              }`}>
                 {isZh ? '进入平台' : 'Open Platform'}
                 <span className="transition-transform group-hover:translate-x-1">&rarr;</span>
               </div>
@@ -138,21 +145,21 @@ export default function PlatformsSection() {
               rel="noopener noreferrer"
               className="group block overflow-hidden rounded-2xl p-8 transition-all duration-300 hover:-translate-y-1"
               style={{
-                background: 'rgba(10, 10, 18, 0.55)',
+                background: isDark ? 'rgba(10, 10, 18, 0.55)' : 'rgba(255, 255, 255, 0.7)',
                 backdropFilter: 'blur(12px)',
                 WebkitBackdropFilter: 'blur(12px)',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
+                border: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid rgba(0, 0, 0, 0.06)',
                 borderLeft: '4px solid transparent',
               }}
               onMouseEnter={(e) => {
                 const el = e.currentTarget;
-                el.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                el.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
                 el.style.borderLeft = '4px solid #f59e0b';
                 el.style.boxShadow = '0 8px 32px rgba(245, 158, 11, 0.06)';
               }}
               onMouseLeave={(e) => {
                 const el = e.currentTarget;
-                el.style.borderColor = 'rgba(255, 255, 255, 0.06)';
+                el.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)';
                 el.style.borderLeft = '4px solid transparent';
                 el.style.boxShadow = 'none';
               }}
@@ -162,16 +169,16 @@ export default function PlatformsSection() {
                 <Mail className="h-7 w-7 text-[#fbbf24]" />
               </div>
 
-              <h3 className="mt-5 display-md text-[#F0F0F5]">
+              <h3 className={`mt-5 display-md ${isDark ? 'text-[#F0F0F5]' : 'text-[#1a1a2e]'}`}>
                 {isZh ? 'XClaw 智能邮件订阅' : 'XClaw Intelligent Email Subscription'}
               </h3>
-              <p className="mt-1 text-sm italic text-[#55556B]">
+              <p className={`mt-1 text-sm italic ${isDark ? 'text-[#55556B]' : 'text-[#8a8a9e]'}`}>
                 {isZh ? '个性化学术信息推送' : 'Personalized academic information delivery'}
               </p>
 
-              <div className="my-4 h-px bg-[rgba(255,255,255,0.06)]" />
+              <div className={`my-4 h-px ${isDark ? 'bg-[rgba(255,255,255,0.06)]' : 'bg-[rgba(0,0,0,0.06)]'}`} />
 
-              <p className="max-w-[400px] text-sm leading-relaxed text-[#8B8B9E]" style={{ lineHeight: 1.7 }}>
+              <p className={`max-w-[400px] text-sm leading-relaxed ${isDark ? 'text-[#8B8B9E]' : 'text-[#4a4a5e]'}`} style={{ lineHeight: 1.7 }}>
                 {isZh
                   ? '面向科研人员的智能邮件推送系统，支持个性化订阅、RSS 聚合、AI 智能筛选与定时推送。'
                   : 'Smart email delivery system for researchers with personalized subscriptions, RSS aggregation, and AI filtering.'}
@@ -184,14 +191,18 @@ export default function PlatformsSection() {
                   : ['Personalized Subscriptions', 'RSS Aggregation', 'AI Smart Filtering']
                 ).map((f) => (
                   <div key={f} className="flex items-center gap-2">
-                    <Check className="h-3.5 w-3.5 text-[#8B8B9E]" />
-                    <span className="text-sm text-[#8B8B9E]">{f}</span>
+                    <Check className={`h-3.5 w-3.5 ${isDark ? 'text-[#8B8B9E]' : 'text-[#6B6B7B]'}`} />
+                    <span className={`text-sm ${isDark ? 'text-[#8B8B9E]' : 'text-[#6B6B7B]'}`}>{f}</span>
                   </div>
                 ))}
               </div>
 
               {/* Button */}
-              <div className="mt-6 inline-flex items-center gap-2 rounded-[10px] border border-white/15 px-5 py-2.5 text-sm font-medium text-[#F0F0F5] transition-all group-hover:border-white/25 group-hover:bg-[rgba(255,255,255,0.05)]">
+              <div className={`mt-6 inline-flex items-center gap-2 rounded-[10px] border px-5 py-2.5 text-sm font-medium transition-all group-hover:bg-[rgba(255,255,255,0.05)] ${
+                isDark
+                  ? 'border-white/15 text-[#F0F0F5] group-hover:border-white/25'
+                  : 'border-black/15 text-[#1a1a2e] group-hover:border-black/25 group-hover:bg-[rgba(0,0,0,0.05)]'
+              }`}>
                 {isZh ? '进入 XClaw' : 'Open XClaw'}
                 <span className="transition-transform group-hover:translate-x-1">&rarr;</span>
               </div>

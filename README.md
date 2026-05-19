@@ -1,6 +1,6 @@
 # AGI&FBHC Homepage
 
-> 江南大学人工智能与计算生物学实验室（AGI&FBHC）官方网站 —— 展示课题组研究方向、科研成果、最新动态与开源项目。
+> 江南大学通用人工智能&食品生物健康交叉研究中心（AGI&FBHC）官方网站 —— 展示课题组研究方向、研究成果、最新动态与开源项目。
 
 [中文](#) | [English](#)
 
@@ -8,14 +8,12 @@
 
 ## 项目简介
 
-本项目是 **AGI&FBHC 实验室** 的官方网站，集成了：
+本项目是 **AGI&FBHC 研究中心** 的官方网站，集成了：
 
-- **课题组介绍** — 研究方向、导师团队、招生信息
+- **课题组介绍** — 研究方向、导师团队、研究成果
 - **科研动态** — 微信公众号文章自动同步、GitHub 仓库展示
 - **开源项目** — 实验室 GitHub 组织的项目列表与 README 摘要
 - **双语支持** — 中英文切换，面向国际学术交流
-
-线上地址：http://agi-fbhc.jiangnan.edu.cn（或内网 192.168.31.79）
 
 ---
 
@@ -241,5 +239,5 @@ MIT License © AGI&FBHC Lab, Jiangnan University
 
 ---
 
-> 江南大学 · 人工智能与计算生物学实验室  
+> 江南大学 · 通用人工智能&食品生物健康交叉研究中心  
 > Artificial General Intelligence & Frontier Biology and Health Computing Lab

@@ -303,7 +303,7 @@ export default function UpdatesSection() {
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.98 }}
                       transition={{ duration: 0.3, ease: easeOutExpo }}
-                      className="group relative cursor-pointer overflow-hidden rounded-[14px] p-5 transition-[border-color,box-shadow,transform] duration-300 hover:-translate-y-1"
+                      className="group relative cursor-pointer overflow-hidden rounded-[14px] transition-[border-color,box-shadow,transform] duration-300 hover:scale-[1.02]"
                       style={{
                         background: 'rgba(10, 10, 18, 0.55)',
                         backdropFilter: 'blur(12px)',
@@ -320,39 +320,47 @@ export default function UpdatesSection() {
                       }}
                       onClick={() => setSelectedId(article.id)}
                     >
-                      {/* Top row */}
-                      <div className="flex items-center justify-between">
-                        <span
-                          className="rounded-full px-2.5 py-1 text-xs font-medium"
-                          style={{ background: catStyle.bg, color: catStyle.text }}
-                        >
-                          {article.category}
-                        </span>
-                        <span className="flex items-center gap-1 text-xs text-[#55556B]">
-                          <SourceIcon className="h-3 w-3" />
-                          {article.source}
-                        </span>
-                      </div>
+                      {/* Top color bar */}
+                      <div
+                        className="h-[3px] w-0 transition-all duration-300 group-hover:w-full"
+                        style={{ background: catStyle.glow }}
+                      />
 
-                      {/* Title */}
-                      <h3 className="mt-3 text-base font-semibold leading-snug text-[#F0F0F5] line-clamp-2">
-                        {article.title}
-                      </h3>
+                      <div className="p-5 pt-[17px]">
+                        {/* Top row */}
+                        <div className="flex items-center justify-between">
+                          <span
+                            className="rounded-full px-2.5 py-1 text-xs font-medium"
+                            style={{ background: catStyle.bg, color: catStyle.text }}
+                          >
+                            {article.category}
+                          </span>
+                          <span className="flex items-center gap-1 text-xs text-[#55556B]">
+                            <SourceIcon className="h-3 w-3" />
+                            {article.source}
+                          </span>
+                        </div>
 
-                      {/* Abstract */}
-                      <p className="mt-2 text-sm leading-relaxed text-[#8B8B9E] line-clamp-3" style={{ lineHeight: 1.6 }}>
-                        {article.excerpt}
-                      </p>
+                        {/* Title */}
+                        <h3 className="mt-3 text-base font-semibold leading-snug text-[#F0F0F5] line-clamp-2">
+                          {article.title}
+                        </h3>
 
-                      {/* Bottom row */}
-                      <div className="mt-4 flex items-center justify-between">
-                        <span className="flex items-center gap-1 text-xs text-[#55556B]">
-                          <Calendar className="h-3 w-3" />
-                          {formatDate(article.date, isZh)}
-                        </span>
-                        <span className="text-sm font-medium text-[#A5B4FC]">
-                          {isZh ? '阅读更多' : 'Read More'} &rarr;
-                        </span>
+                        {/* Abstract */}
+                        <p className="mt-2 text-sm leading-relaxed text-[#8B8B9E] line-clamp-3" style={{ lineHeight: 1.6 }}>
+                          {article.excerpt}
+                        </p>
+
+                        {/* Bottom row */}
+                        <div className="mt-4 flex items-center justify-between">
+                          <span className="flex items-center gap-1 text-xs text-[#55556B]">
+                            <Calendar className="h-3 w-3" />
+                            {formatDate(article.date, isZh)}
+                          </span>
+                          <span className="text-sm font-medium text-[#A5B4FC]">
+                            {isZh ? '阅读更多' : 'Read More'} &rarr;
+                          </span>
+                        </div>
                       </div>
                     </motion.article>
                   );

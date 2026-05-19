@@ -193,9 +193,9 @@ export default function AboutSection() {
             viewport={{ once: true, amount: 0.3 }}
             className="grid grid-cols-2 gap-4"
           >
-            {stats.map((stat) => (
+            {stats.map((stat, index) => (
               <motion.div
-                key={stat.label}
+                key={index}
                 variants={itemVariants}
                 className="rounded-xl p-5"
                 style={{

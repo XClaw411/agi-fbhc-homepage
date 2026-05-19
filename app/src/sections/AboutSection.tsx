@@ -61,6 +61,13 @@ export default function AboutSection() {
 
   return (
     <section id="about" className="relative py-16 lg:py-24" style={{ background: '#0A0A12' }}>
+      {/* Bottom fade to black */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-24"
+        style={{
+          background: 'linear-gradient(180deg, transparent 0%, #050508 100%)',
+        }}
+      />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <motion.div

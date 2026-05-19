@@ -31,7 +31,7 @@ export default function GroupHealth() {
     <div style={{ background: isDark ? '#050508' : '#f0f0f5' }}>
       {/* Hero Banner */}
       <section className="relative flex min-h-[480px] items-end overflow-hidden pb-16 pt-32">
-        <div className="absolute inset-0" style={{ background: isDark ? 'linear-gradient(180deg, #081420 0%, #050508 100%)' : 'linear-gradient(180deg, #f0f7ff 0%, #f0f0f5 100%)' }} />
+        <div className="absolute inset-0" style={{ background: isDark ? 'linear-gradient(180deg, #080810 0%, #050508 100%)' : 'linear-gradient(180deg, #f8f8fa 0%, #f0f0f5 100%)' }} />
         <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 60% 50% at 30% 30%, rgba(14,165,233,0.12) 0%, transparent 60%)' }} />
         <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 50% 40% at 80% 60%, rgba(56,189,248,0.06) 0%, transparent 50%)' }} />
         <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
@@ -117,7 +117,7 @@ export default function GroupHealth() {
       </section>
 
       {/* Research Topics */}
-      <section className="py-16" style={{ background: isDark ? '#0A0A12' : '#ffffff' }}>
+      <section className="py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}

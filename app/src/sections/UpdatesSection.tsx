@@ -6,6 +6,18 @@ import { useTheme } from '@/contexts/ThemeContext';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+// 预处理微信风格的 Markdown：** 文字 ** → **文字**
+function preprocessWechatMarkdown(content: string): string {
+  if (!content) return '';
+  return content
+    // 修复 ** 文字 ** → **文字**
+    .replace(/\*\*\s+([^*]+?)\s+\*\*/g, '**$1**')
+    // 修复 * 文字 * → *文字*（斜体）
+    .replace(/(?<!\*)\*\s+([^*]+?)\s+\*(?!\*)/g, '*$1*')
+    // 修复多余空格导致的换行问题
+    .replace(/\n\s*\n\s*\n+/g, '\n\n');
+}
+
 const easeOutExpo = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
 // Staggered children animation config
@@ -659,7 +671,7 @@ export default function UpdatesSection() {
                       ),
                     }}
                   >
-                    {isZh ? selected.content : selected.contentEn}
+                    {preprocessWechatMarkdown(isZh ? selected.content : selected.contentEn)}
                   </ReactMarkdown>
                 </motion.div>
 

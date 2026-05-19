@@ -9,7 +9,7 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: 'dark',
+  theme: 'light',
   setTheme: () => {},
   toggleTheme: () => {},
 });
@@ -20,7 +20,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       const saved = localStorage.getItem('agi-theme') as Theme | null;
       if (saved) return saved;
     }
-    return 'dark';
+    return 'light';
   });
 
   useEffect(() => {

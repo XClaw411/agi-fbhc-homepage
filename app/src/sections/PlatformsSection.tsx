@@ -101,7 +101,7 @@ export default function PlatformsSection() {
                 {isZh ? '科研协作平台' : 'Research Collaboration Platform'}
               </h3>
               <p className={`mt-1 text-sm italic ${isDark ? 'text-[#55556B]' : 'text-[#8a8a9e]'}`}>
-                {isZh ? 'AI 辅助的科研协作工作空间' : 'AI-assisted scientific research workspace'}
+                {isZh ? 'AI 辅助的科研协作工作空间（内测中）' : 'AI-assisted scientific research workspace (Beta)'}
               </p>
 
               <div className={`my-4 h-px ${isDark ? 'bg-[rgba(255,255,255,0.06)]' : 'bg-[rgba(0,0,0,0.06)]'}`} />

@@ -458,16 +458,18 @@ export default function UpdatesSection() {
                   transition={{ delay: 0.1, duration: 0.2 }}
                 />
 
-                {/* Excerpt */}
-                <motion.p
-                  className="text-base font-medium leading-relaxed text-[#A5B4FC]"
-                  style={{ lineHeight: 1.7 }}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.12, duration: 0.2, ease: easeOutExpo }}
-                >
-                  {selected.excerpt}
-                </motion.p>
+                {/* Excerpt — hide for GitHub repos since full README is below */}
+                {selected.source !== 'GitHub' && selected.excerpt && (
+                  <motion.p
+                    className="text-base font-medium leading-relaxed text-[#A5B4FC]"
+                    style={{ lineHeight: 1.7 }}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.12, duration: 0.2, ease: easeOutExpo }}
+                  >
+                    {selected.excerpt}
+                  </motion.p>
+                )}
 
                 {/* Full content — Markdown rendered */}
                 <motion.div

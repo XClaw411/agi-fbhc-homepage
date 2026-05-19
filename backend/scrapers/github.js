@@ -227,9 +227,10 @@ function repoToArticle(repo, readmeSummary) {
 
   const category = inferCategory(repo);
 
-  // Use description as excerpt, fallback to README summary
-  let excerpt = repo.description || readmeSummary || '';
-  if (excerpt.length > 300) excerpt = excerpt.slice(0, 297) + '...';
+  // Use description as excerpt for GitHub repos (short, one-line)
+  // Don't use README summary here — the full README is in content
+  let excerpt = repo.description || '';
+  if (excerpt.length > 200) excerpt = excerpt.slice(0, 197) + '...';
 
   const title = repo.description
     ? `${repo.name}: ${repo.description}`
